@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CompTIA Security+ SY0-701 — Study Game</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Fatal error banner: hidden unless a script error occurs -->
+<div id="fatal-error"></div>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div>
+    <h1>🔐 CompTIA Security+ SY0-701</h1>
+    <p>Ultimate Study Game — All 5 Domains</p>
+  </div>
+  <div class="xp-row">
+    <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+    <div class="lv-chip">LV <span id="lv-num">1</span></div>
+    <button class="btn-sm" id="reset-btn">Reset</button>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="home-screen">
+  <div class="hero">
+    <div class="hero-tag">CompTIA Security+ SY0-701 · All 5 Domains</div>
+    <h2>Study smarter.<br><span>Pass first try.</span></h2>
+    <p>10 game modes · 220+ flashcards · Boss battles · Ports quiz · Survival mode · Study notes</p>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-chip"><div class="num" id="s-xp" style="color:#5b7fff">0</div><div class="lbl">Total XP</div></div>
+    <div class="stat-chip"><div class="num" id="s-str" style="color:#f5a623">0</div><div class="lbl">Best Streak</div></div>
+    <div class="stat-chip"><div class="num" id="s-cor" style="color:#22c55e">0</div><div class="lbl">Correct</div></div>
+    <div class="stat-chip"><div class="num" id="s-ses" style="color:#9d7ff5">0</div><div class="lbl">Sessions</div></div>
+    <div class="stat-chip"><div class="num" id="s-mas" style="color:#3fd9c8">0</div><div class="lbl">Mastered</div></div>
+    <div class="stat-chip"><div class="num" id="s-bos" style="color:#ef4444">0</div><div class="lbl">Bosses</div></div>
+  </div>
+
+  <div class="sec-title">Game Modes</div>
+  <div class="mode-grid" id="mode-grid"></div>
+
+  <div class="sec-title">Study by Domain</div>
+  <div class="domain-grid" id="domain-grid"></div>
+
+  <div class="sec-title">Achievements</div>
+  <div class="ach-row" id="ach-row"></div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div class="game-hdr">
+    <button class="btn-back" id="back-btn">← Home</button>
+    <div class="g-title" id="game-title">Game</div>
+    <div class="streak-pill" id="streak-pill">🔥 0</div>
+  </div>
+  <div class="prog-row">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-lbl" id="prog-lbl">0 / 0</div>
+  </div>
+  <div id="game-body" style="margin-top:0.9rem"></div>
+</div>
+
+<div id="toast"></div>
+<button id="scroll-top">↑</button>
+
+<script src="script.js"></script>
+</body>
+</html>
