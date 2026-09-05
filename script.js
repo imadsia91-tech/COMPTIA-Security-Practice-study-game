@@ -23,6 +23,10 @@ window.addEventListener('unhandledrejection', function (e) {
 // DATA
 // ═══════════════════════════════════════
 const DN = ['General Security','Threats & Vulnerabilities','Security Architecture','Security Operations','Governance & Risk'];
+// Real SY0-701 exam weighting: General 12%, Threats 22%, Architecture 18%, Operations 28%, Governance 20%.
+// Domain Exam (50 total) and Boss Quiz (30 total) question counts are scaled to match, instead of splitting evenly.
+const DEX_COUNTS = [6, 11, 9, 14, 10];
+const BOSS_COUNTS = [4, 7, 5, 8, 6];
 // MODULES = "My Path COMPTIA Sec+" course modules (used for Flashcards, Study Notes, Match It).
 // DN above stays as the 5 official SY0-701 exam domains (used for Boss Quiz, Domain Exam, First Preparation)
 // since those modes simulate the real certification test, which is graded on those 5 domains regardless of
@@ -178,7 +182,26 @@ const CARDS = [
 {d:4,m:7,t:'Risk Register',df:'Document tracking risks, likelihood, impact, owner, and mitigation status.',ex:'Reviewed monthly by risk committee. Each risk has an owner and a target resolution date.'},
 {d:4,m:7,t:'MTTR',df:'Mean Time To Repair — average time to restore a system after a failure.',ex:'MTTR = 2 hours means on average it takes 2 hours to fix each outage.'},
 {d:4,m:7,t:'MTBF',df:'Mean Time Between Failures — average time between system failures.',ex:'MTBF = 10,000 hours means the device fails approximately once every 417 days.'},
+// Cloud Security — module 7 of "My Path COMPTIA Sec+" (module 6 index) covers Cloud Security I & II,
+// which had no dedicated flashcards until now.
+{d:2,m:6,t:'Shared Responsibility Model',df:'Cloud provider secures the underlying infrastructure; the customer secures their data, access, and configuration.',ex:'AWS secures the data center — you still have to configure your S3 bucket permissions correctly.'},
+{d:2,m:6,t:'IaaS',df:'Infrastructure as a Service — rents servers, storage, and networking. Customer manages the OS upward.',ex:'AWS EC2, Azure VMs — you install and patch the OS yourself.'},
+{d:2,m:6,t:'PaaS',df:'Platform as a Service — provider manages the OS and runtime. Customer manages only app code and data.',ex:'Heroku, Azure App Service — you push code, the platform handles the server.'},
+{d:2,m:6,t:'SaaS',df:'Software as a Service — fully managed application. Customer manages only their data and users.',ex:'Microsoft 365, Salesforce — nothing to patch or configure server-side.'},
+{d:2,m:6,t:'CASB',df:'Cloud Access Security Broker — enforces security policy between users and cloud applications.',ex:'Blocks unsanctioned "shadow IT" cloud apps and enforces DLP on cloud file uploads.'},
+{d:2,m:6,t:'Cloud Misconfiguration',df:'Incorrectly set cloud security settings — the single most common cause of cloud data breaches.',ex:'A publicly readable S3 bucket accidentally exposing customer records to the internet.'},
+{d:2,m:6,t:'IaC',df:'Infrastructure as Code — define and manage infrastructure through versioned, auditable code templates.',ex:'Terraform or CloudFormation scripts that spin up the exact same environment every time.'},
+{d:2,m:6,t:'Container',df:'Lightweight, portable app package that shares the host OS kernel instead of virtualizing full hardware.',ex:'A Docker container bundling an app plus its dependencies to run identically anywhere.'},
 ];
+
+// Derived, not hand-maintained: for each of the 5 official exam domains, which of the 9 course
+// modules its content now lives in (since flashcards moved to modules but Boss/Domain Exam/First
+// Prep stayed on the 5 domains). Used to show a "this domain covers your modules X, Y, Z" bridge.
+const DOMAIN_MODULES = DN.map((_, d) => {
+  const s = new Set();
+  CARDS.forEach(c => { if (c.d === d) s.add(c.m); });
+  return [...s].sort((a, b) => a - b);
+});
 
 const ACRONYMS = [
 {a:'MFA',f:'Multi-Factor Authentication',c:'Identity',d:'Requires two or more different factor types to verify identity.'},{a:'PKI',f:'Public Key Infrastructure',c:'Crypto',d:'Framework of certificates and keys used to manage digital trust.'},
@@ -308,7 +331,7 @@ const MATCHES = [
 // 5. Cryptography & Secure Solutions
 [{t:'PKI',d:'Framework managing digital certificates'},{t:'Salting',d:'Random value added before hashing'},{t:'PFS',d:'Unique session keys per connection'},{t:'Tokenization',d:'Replace sensitive data with placeholder'},{t:'Hashing',d:'One-way integrity fingerprint'},{t:'ECC',d:'Strong security, shorter key length'}],
 // 6. Secure Solution Implementation II
-[{t:'TPM',d:'Hardware chip storing device keys'},{t:'HSM',d:'Dedicated hardware protecting crypto keys'},{t:'EDR',d:'Endpoint monitoring and remote response'},{t:'MDM',d:'Enforces security policy on mobiles'}],
+[{t:'TPM',d:'Hardware chip storing device keys'},{t:'HSM',d:'Dedicated hardware protecting crypto keys'},{t:'EDR',d:'Endpoint monitoring and remote response'},{t:'MDM',d:'Enforces security policy on mobiles'},{t:'CASB',d:'Enforces policy between users and cloud apps'},{t:'Shared Responsibility',d:'Provider secures infra, you secure config'}],
 // 7. Operations, Governance & Risk
 [{t:'RBAC',d:'Access rights based on job role'},{t:'Chain of Custody',d:'Evidence handling documentation'},{t:'UEBA',d:'ML behavioral anomaly detection'},{t:'PAM',d:'Privileged account control and recording'},{t:'ALE',d:'SLE times ARO, expected annual loss'},{t:'BIA',d:'Identifies critical functions, sets RTO/RPO'}],
 // 8. Governance, Compliance & Audits
@@ -333,6 +356,7 @@ const BOSSES = [
 {q:'Trying the same common password against 50,000 accounts to avoid lockout is called:',o:['Brute force','Credential stuffing','Password spraying','Dictionary attack'],a:2},
 {q:'Sending fake ARP replies to redirect traffic through the attacker is called:',o:['DNS poisoning','ARP spoofing','IP spoofing','MAC flooding'],a:1},
 {q:'A supply chain attack compromises:',o:['Target network perimeter directly','A trusted vendor software or hardware provider','User credentials via phishing','The DNS infrastructure'],a:1},
+{q:'An attacker registers "arnazon.com" hoping employees mistype the real domain and land on a phishing clone. This technique is called:',o:['Pretexting','Watering hole','Typosquatting','Whaling'],a:2},
 ]},
 {n:'Architecture Alien',ic:'👽',dm:'Security Architecture',qs:[
 {q:'The network zone hosting public web servers isolated from internal systems is the:',o:['VLAN','VPN','DMZ','NAC zone'],a:2},
@@ -349,6 +373,8 @@ const BOSSES = [
 {q:'Mandatory Access Control bases its decisions on:',o:['User-defined file permissions','Job role assignments','Security labels and clearance levels','Dynamic attribute combinations'],a:2},
 {q:'A bit-for-bit exact copy of a drive used for forensic analysis is called a:',o:['Full system backup','Forensic image','Volume snapshot','RAID mirror'],a:1},
 {q:'PAM (Privileged Access Management) primarily provides:',o:['Shared permanent admin accounts','Just-in-time access with session recording','Automatic password reuse','Removing all admin privileges'],a:1},
+{q:'A company requires privileged accounts to check out temporary, time-limited credentials that are automatically revoked after use. This is an example of:',o:['RBAC','SSO','Privileged Access Management','Federation'],a:2},
+{q:'Which tool would best detect that a critical configuration file was modified outside of an approved change window?',o:['DLP','FIM','UEBA','EDR'],a:1},
 ]},
 {n:'Compliance Dragon',ic:'🐉',dm:'Governance Risk and Compliance',qs:[
 {q:'ALE is calculated as:',o:['SLE plus ARO','SLE multiplied by ARO','ARO divided by SLE','SLE minus ARO'],a:1},
@@ -414,7 +440,8 @@ const NOTES = [
 {h:'PKI & Certificates',rows:[['PKI','Framework managing digital certificates and key pairs — powers HTTPS, VPN, code signing.'],['Certificate Authority','Trusted third party that issues and signs digital certificates.'],['CRL','Certificate Revocation List — certificates revoked before expiry.'],['OCSP','Real-time certificate validity check — faster than downloading a full CRL.'],['Digital Signature','Sign with private key, verify with public key. Gives integrity plus non-repudiation.'],['Steganography','Hides data inside another file (image, audio) without obvious detection.']]}
 ]},
 {tab:'📱 Secure Solutions II', title:'Module 7: Secure Solution Implementation II', sects:[
-{h:'Endpoint, Mobile & Hardware Security',rows:[['TPM','Trusted Platform Module — hardware chip storing crypto keys on-device (e.g. BitLocker).'],['HSM','Hardware Security Module — dedicated hardware for crypto ops; keys never leave the device.'],['EDR','Endpoint Detection & Response — monitors endpoints, detects threats, enables remote isolation.'],['MDM','Mobile Device Management — enforces PIN, encryption, remote wipe on corporate mobiles.']]}
+{h:'Endpoint, Mobile & Hardware Security',rows:[['TPM','Trusted Platform Module — hardware chip storing crypto keys on-device (e.g. BitLocker).'],['HSM','Hardware Security Module — dedicated hardware for crypto ops; keys never leave the device.'],['EDR','Endpoint Detection & Response — monitors endpoints, detects threats, enables remote isolation.'],['MDM','Mobile Device Management — enforces PIN, encryption, remote wipe on corporate mobiles.']]},
+{h:'Cloud Security',rows:[['Shared Responsibility','Provider secures the infrastructure; YOU still secure data, access, and configuration.'],['IaaS / PaaS / SaaS','More provider control as you move IaaS → PaaS → SaaS; less for you to patch, but less control too.'],['CASB','Cloud Access Security Broker — enforces policy between your users and cloud apps.'],['Cloud Misconfiguration','The single most common cause of cloud breaches — e.g. a publicly exposed storage bucket.'],['IaC','Infrastructure as Code — versioned, auditable templates instead of manual server setup.']]}
 ]},
 {tab:'⚙️ Ops & Risk', title:'Module 8: Operations, Governance & Risk', sects:[
 {h:'Incident Response Phases — IN ORDER',rows:[['1. Preparation','Plans, tools, training BEFORE incidents occur. This is the FIRST phase.'],['2. Detection','Identify that an incident has actually occurred.'],['3. Analysis','Determine scope, impact, and root cause of the incident.'],['4. Containment','STOP THE SPREAD. Isolate affected systems FIRST before anything else.'],['5. Eradication','Remove the threat completely from all affected systems.'],['6. Recovery','Restore systems to normal production operation.'],['7. Lessons Learned','Document, update plans, implement improvements. The FINAL phase.']]},
@@ -435,11 +462,11 @@ const NOTES = [
 ];
 
 const DEX = [
-[{q:'An employee installs software that records keystrokes and sends them to an external server. Which malware category is this?',o:['Spyware','Keylogger','Rootkit','Trojan'],a:1},{q:'Which access control principle ensures users cannot grant others more access than they themselves possess?',o:['Least privilege','Non-repudiation','Need to know','Separation of duties'],a:0},{q:'An organization stores encryption keys with a trusted third party for recovery purposes. This practice is called:',o:['Key escrow','PKI management','HSM storage','TPM binding'],a:0},{q:'Which control type best describes a fire suppression system that activates automatically when heat is detected?',o:['Preventive','Detective','Corrective','Compensating'],a:2},{q:'An employee performs both the accounts payable function AND payment authorization. Which principle is violated?',o:['Least privilege','Separation of duties','Non-repudiation','Defense in depth'],a:1},{q:'A company adds unique random data to each password before hashing it. What is the primary security benefit?',o:['Prevents brute force entirely','Defeats rainbow table attacks','Encrypts the passwords before storage','Enables password recovery by admins'],a:1},{q:'Which of the following is an example of a DETERRENT control?',o:['Firewall that blocks malicious traffic','Security camera that records activity','Login banner warning of monitoring','IDS that generates an alert'],a:2},{q:'What is the primary purpose of a honeynet in an enterprise environment?',o:['Block all incoming malicious traffic','Provide failover redundancy','Lure attackers and gather intelligence','Encrypt sensitive data in transit'],a:2},{q:'Which cryptographic concept ensures a past session stays private even if the current session key is later compromised?',o:['Key escrow','Perfect forward secrecy','Certificate pinning','Symmetric key rotation'],a:1},{q:'AES-256 encrypts a file before it is stored on a server. Which CIA component does this primarily protect?',o:['Availability','Integrity','Non-repudiation','Confidentiality'],a:3}],
-[{q:'An attacker sends highly personalized emails to three specific named employees using details from LinkedIn. This is called:',o:['Whaling','Phishing','Spear phishing','BEC'],a:2},{q:'Malware that waits for a specific calendar date before deleting all company files is classified as a:',o:['Ransomware','Logic bomb','Worm','Rootkit'],a:1},{q:'An attacker compromises a software vendor and injects malware into a legitimate update reaching 10,000 customers. This is a:',o:['Zero-day exploit','Watering hole attack','Supply chain attack','DDoS attack'],a:2},{q:'Which attack type tries the same small set of common passwords against many different accounts to avoid lockout policies?',o:['Brute force','Credential stuffing','Password spraying','Dictionary attack'],a:2},{q:'An attacker modifies the ARP cache on a victim system to intercept network traffic. This is called:',o:['DNS poisoning','ARP spoofing','IP spoofing','Replay attack'],a:1},{q:'A user receives an SMS claiming their bank account is locked with a link to verify credentials. This is called:',o:['Phishing','Vishing','Smishing','Pretexting'],a:2},{q:'Which vulnerability allows an attacker to use ../ sequences in a URL to read files outside the web root?',o:['SQL injection','XSS','Directory traversal','Buffer overflow'],a:2},{q:'An attacker uses credentials from a LinkedIn breach to log into a victim\'s bank account. This technique relies on:',o:['Brute force','Credential stuffing','Password spraying','Social engineering'],a:1},{q:'Which malware type operates at the OS kernel level to actively conceal its presence from standard security tools?',o:['Spyware','Ransomware','Keylogger','Rootkit'],a:3},{q:'An attacker calls an employee claiming to be Microsoft support requesting remote access. This is called:',o:['Phishing','Smishing','Vishing','Pretexting'],a:2}],
-[{q:'A company needs a DR facility that can assume full operations within 15 minutes of a primary site failure. Which site type?',o:['Cold site','Warm site','Hot site','Colocation facility'],a:2},{q:'Which technology evaluates a device\'s patch level and antivirus status before granting it network access?',o:['VLAN','IPS sensor','NAC','SIEM system'],a:2},{q:'An administrator deploys a device inline that automatically drops packets matching known attack signatures. This is an:',o:['IDS','IPS','NGFW','Proxy server'],a:1},{q:'An organization segments its network so IoT devices cannot communicate directly with financial servers. This is:',o:['Micro-segmentation','DMZ design','VPN tunneling','VLAN trunking'],a:0},{q:'The RPO for a critical database is set to 2 hours. What does this mean in practice?',o:['System must be restored within 2 hours','Backups must run at least every 2 hours','System can be offline for 2 hours','Two recovery sites are required'],a:1},{q:'Which wireless security protocol replaces PSK with SAE and is resistant to KRACK attacks?',o:['WEP','WPA','WPA2','WPA3'],a:3},{q:'A company hosts its public website and internal intranet on separate servers with a firewall between them. The public server is in the:',o:['Internal corporate network','VPN tunnel','DMZ','Management VLAN'],a:2},{q:'Which protocol encrypts data at the network layer (Layer 3) and secures site-to-site VPN tunnels?',o:['TLS','SSL','IPSec','SSH'],a:2},{q:'A system fully operational at a remote location receiving real-time replication that can assume production immediately is a:',o:['RPO','MTBF','MTTR','Hot site'],a:3},{q:'An organization places a server with deliberately weak security on its network to attract attackers. This is called a:',o:['Jump server','DMZ gateway','Honeypot','Bastion host'],a:2}],
-[{q:'A security analyst disconnects an infected web server from the corporate network to prevent malware spreading. This occurs during which IR phase?',o:['Preparation','Detection','Containment','Eradication'],a:2},{q:'A tool alerts when a user accessed 200 sensitive files at 3AM which is ten times their normal activity baseline. This tool is called:',o:['SIEM','DLP','UEBA','EDR'],a:2},{q:'Which access control model allows a nurse to access patient records only during their shift hours and only from a hospital workstation?',o:['DAC','RBAC','MAC','ABAC'],a:3},{q:'When seizing a hard drive for forensic investigation, what is the FIRST action to ensure evidence remains admissible in court?',o:['Run antivirus scan','Create a forensic image','Review the file contents','Establish and document chain of custody'],a:3},{q:'An organization wants employees to use a single login for email, HR system, and project tools without re-entering credentials. This is called:',o:['MFA','SSO','RBAC','PAM'],a:1},{q:'A platform that automatically isolates a compromised host, opens a help desk ticket, and notifies the team without human intervention is:',o:['SIEM correlation','IPS blocking','SOAR automation','EDR containment'],a:2},{q:'A forensic analyst needs to find fileless malware that exists only in active memory and leaves no disk artifacts. The appropriate tool is:',o:['Wireshark','Nessus','Volatility','Autopsy'],a:2},{q:'An employee uses their fingerprint to unlock a mobile device for corporate email access. This is which authentication factor?',o:['Something you know','Something you have','Something you are','Somewhere you are'],a:2},{q:'An employee is emailing customer lists to a personal Gmail account every Friday after 5PM. Which tool should have detected and blocked this?',o:['SIEM platform','EDR solution','DLP system','FIM tool'],a:2},{q:'The IR team has removed ransomware from all infected systems and is now rebuilding systems and restoring data from clean backups. Which IR phase is this?',o:['Recovery','Eradication','Lessons Learned','Containment'],a:0}],
-[{q:'If ALE equals $100,000 and ARO equals 0.25, what is the Single Loss Expectancy (SLE)?',o:['$25,000','$400,000','$75,000','$100,250'],a:1},{q:'A hospital\'s EHR system goes down and clinical staff cannot access patient medication records. Which regulation is MOST directly relevant?',o:['PCI DSS','SOX','GDPR','HIPAA'],a:3},{q:'A company stops accepting credit card numbers and redirects to a third-party payment processor. This represents which risk management strategy?',o:['Risk mitigation','Risk transfer','Risk avoidance','Risk acceptance'],a:2},{q:'Which specific document must be signed BEFORE a penetration test begins to define authorized scope and permitted attack methods?',o:['Service Level Agreement','Non-Disclosure Agreement','Rules of engagement','Business Partners Agreement'],a:2},{q:'A company purchases cyber liability insurance covering breach notification, legal fees, and regulatory fines. This is classified as risk:',o:['Mitigation','Avoidance','Transfer','Acceptance'],a:2},{q:'A risk analyst is calculating how often a specific risk event is expected to occur per year. Which metric does this represent?',o:['SLE','ALE','ARO','Exposure factor'],a:2},{q:'A company\'s BCP states the payroll system must be restored and operational within 4 hours of any failure. This 4-hour requirement is the:',o:['RPO (Recovery Point Objective)','MTD (Maximum Tolerable Downtime)','RTO (Recovery Time Objective)','MTBF (Mean Time Between Failures)'],a:2},{q:'Which US regulation specifically protects the privacy and security of individually identifiable health information in electronic form?',o:['GDPR','PCI DSS','HIPAA','SOX'],a:2},{q:'A company announces external researchers may submit discovered vulnerabilities in exchange for monetary rewards. This is called a:',o:['Penetration testing engagement','Red team exercise','Bug bounty program','Vulnerability assessment'],a:2},{q:'Which of the 5 NIST CSF functions focuses on developing organizational understanding of cybersecurity risk to systems, assets, and data?',o:['Protect','Detect','Respond','Identify'],a:3}],
+[{q:'An employee installs software that records keystrokes and sends them to an external server. Which malware category is this?',o:['Spyware','Keylogger','Rootkit','Trojan'],a:1,e:'The description — recording keystrokes and exfiltrating them — is the defining behavior of a keylogger; spyware is the broader category, but keylogger is the precise term here.'},{q:'Which access control principle ensures users cannot grant others more access than they themselves possess?',o:['Least privilege','Non-repudiation','Need to know','Separation of duties'],a:0,e:'Least privilege caps every user\'s access at exactly what their job requires, so no one can hold or hand off more permission than their own role allows.'},{q:'An organization stores encryption keys with a trusted third party for recovery purposes. This practice is called:',o:['Key escrow','PKI management','HSM storage','TPM binding'],a:0,e:'Key escrow stores a copy of encryption keys with a trusted third party specifically so they can be recovered later if the original is lost.'},{q:'Which control type best describes a fire suppression system that activates automatically when heat is detected?',o:['Preventive','Detective','Corrective','Compensating'],a:2,e:'A corrective control acts AFTER an incident to limit or repair damage — automatic fire suppression only activates once a fire is already detected.'},{q:'An employee performs both the accounts payable function AND payment authorization. Which principle is violated?',o:['Least privilege','Separation of duties','Non-repudiation','Defense in depth'],a:1,e:'Separation of duties requires that no single person control an entire high-risk process end-to-end; combining payables and authorization removes that check.'},{q:'A company adds unique random data to each password before hashing it. What is the primary security benefit?',o:['Prevents brute force entirely','Defeats rainbow table attacks','Encrypts the passwords before storage','Enables password recovery by admins'],a:1,e:'Salting adds unique random data before hashing, so precomputed rainbow tables (which map plain hashes to passwords) no longer match.'},{q:'Which of the following is an example of a DETERRENT control?',o:['Firewall that blocks malicious traffic','Security camera that records activity','Login banner warning of monitoring','IDS that generates an alert'],a:2,e:'A deterrent discourages an attacker without directly blocking or detecting them — a warning banner works purely on psychology, not enforcement.'},{q:'What is the primary purpose of a honeynet in an enterprise environment?',o:['Block all incoming malicious traffic','Provide failover redundancy','Lure attackers and gather intelligence','Encrypt sensitive data in transit'],a:2,e:'A honeynet is a network of decoy systems built specifically to attract attackers so defenders can observe their techniques safely.'},{q:'Which cryptographic concept ensures a past session stays private even if the current session key is later compromised?',o:['Key escrow','Perfect forward secrecy','Certificate pinning','Symmetric key rotation'],a:1,e:'PFS generates a unique key for every session, so compromising today\'s key cannot be used to decrypt sessions captured in the past.'},{q:'AES-256 encrypts a file before it is stored on a server. Which CIA component does this primarily protect?',o:['Availability','Integrity','Non-repudiation','Confidentiality'],a:3,e:'Encrypting data at rest prevents anyone without the key from reading it — a direct protection of confidentiality, not integrity or availability.'}],
+[{q:'An attacker sends highly personalized emails to three specific named employees using details from LinkedIn. This is called:',o:['Whaling','Phishing','Spear phishing','BEC'],a:2,e:'Spear phishing is phishing personalized with real details about a specific, named target — unlike whaling (executives specifically) or generic mass phishing.'},{q:'Malware that waits for a specific calendar date before deleting all company files is classified as a:',o:['Ransomware','Logic bomb','Worm','Rootkit'],a:1,e:'A logic bomb stays dormant until a specific trigger condition — like a date — is met, then executes its malicious payload.'},{q:'An attacker compromises a software vendor and injects malware into a legitimate update reaching 10,000 customers. This is a:',o:['Zero-day exploit','Watering hole attack','Supply chain attack','DDoS attack'],a:2,e:'Compromising a trusted vendor\'s update to reach its downstream customers is the textbook definition of a supply chain attack.'},{q:'Which attack type tries the same small set of common passwords against many different accounts to avoid lockout policies?',o:['Brute force','Credential stuffing','Password spraying','Dictionary attack'],a:2,e:'Password spraying tries a small number of common passwords against MANY accounts, staying under per-account lockout thresholds — unlike brute force, which hammers one account.'},{q:'An attacker modifies the ARP cache on a victim system to intercept network traffic. This is called:',o:['DNS poisoning','ARP spoofing','IP spoofing','Replay attack'],a:1,e:'ARP spoofing sends forged ARP replies to poison a victim\'s ARP cache, redirecting traffic meant for another host to the attacker.'},{q:'A user receives an SMS claiming their bank account is locked with a link to verify credentials. This is called:',o:['Phishing','Vishing','Smishing','Pretexting'],a:2,e:'Smishing is phishing delivered via SMS text message — the same social-engineering goal as phishing, just over a different channel.'},{q:'Which vulnerability allows an attacker to use ../ sequences in a URL to read files outside the web root?',o:['SQL injection','XSS','Directory traversal','Buffer overflow'],a:2,e:'Directory traversal uses sequences like ../ to escape the web root and access files that should be off-limits.'},{q:'An attacker uses credentials from a LinkedIn breach to log into a victim\'s bank account. This technique relies on:',o:['Brute force','Credential stuffing','Password spraying','Social engineering'],a:1,e:'Credential stuffing reuses username and password pairs leaked in one breach to try logging into other, unrelated services.'},{q:'Which malware type operates at the OS kernel level to actively conceal its presence from standard security tools?',o:['Spyware','Ransomware','Keylogger','Rootkit'],a:3,e:'Rootkits operate at the kernel level specifically to hide their own presence and that of other malware from normal detection tools.'},{q:'An attacker calls an employee claiming to be Microsoft support requesting remote access. This is called:',o:['Phishing','Smishing','Vishing','Pretexting'],a:2,e:'Vishing is voice-based phishing — a phone call impersonating a trusted party, like IT support, to extract information or access.'},{q:'A security researcher discovers a vulnerability in production software with no patch available from the vendor, and attackers begin exploiting it before a fix is released. This is a:',o:['Zero-day exploit','Supply chain attack','Watering hole attack','Privilege escalation'],a:0,e:'A zero-day is a vulnerability being actively exploited before the vendor has released, or even developed, a patch, leaving defenders with zero days of advance warning.'}],
+[{q:'A company needs a DR facility that can assume full operations within 15 minutes of a primary site failure. Which site type?',o:['Cold site','Warm site','Hot site','Colocation facility'],a:2,e:'A hot site is a fully mirrored, real-time-replicated facility that can take over operations almost immediately — minutes, not hours or days.'},{q:'Which technology evaluates a device\'s patch level and antivirus status before granting it network access?',o:['VLAN','IPS sensor','NAC','SIEM system'],a:2,e:'Network Access Control checks a device\'s security posture — patch level, antivirus status — against policy before granting it network access.'},{q:'An administrator deploys a device inline that automatically drops packets matching known attack signatures. This is an:',o:['IDS','IPS','NGFW','Proxy server'],a:1,e:'An IPS sits inline with traffic and actively drops packets matching known attack signatures; an IDS, by contrast, only alerts and never blocks.'},{q:'An organization segments its network so IoT devices cannot communicate directly with financial servers. This is:',o:['Micro-segmentation','DMZ design','VPN tunneling','VLAN trunking'],a:0,e:'Micro-segmentation applies fine-grained policies so individual devices or workloads can only reach exactly what they need to, isolating IoT from finance systems.'},{q:'The RPO for a critical database is set to 2 hours. What does this mean in practice?',o:['System must be restored within 2 hours','Backups must run at least every 2 hours','System can be offline for 2 hours','Two recovery sites are required'],a:1,e:'RPO defines the maximum acceptable data loss window — a 2-hour RPO means your most recent backup can be at most 2 hours old.'},{q:'Which wireless security protocol replaces PSK with SAE and is resistant to KRACK attacks?',o:['WEP','WPA','WPA2','WPA3'],a:3,e:'WPA3 replaces WPA2\'s PSK four-way handshake with SAE, which resists offline dictionary attacks like KRACK.'},{q:'A company hosts its public website and internal intranet on separate servers with a firewall between them. The public server is in the:',o:['Internal corporate network','VPN tunnel','DMZ','Management VLAN'],a:2,e:'A DMZ is a buffer network segment that hosts public-facing servers, isolated from the internal network by firewalls on both sides.'},{q:'Which protocol encrypts data at the network layer (Layer 3) and secures site-to-site VPN tunnels?',o:['TLS','SSL','IPSec','SSH'],a:2,e:'IPSec operates at Layer 3 to encrypt and authenticate IP packets, and is the standard protocol securing site-to-site VPN tunnels.'},{q:'A system fully operational at a remote location receiving real-time replication that can assume production immediately is a:',o:['RPO','MTBF','MTTR','Hot site'],a:3,e:'A hot site provides real-time replication and can assume production immediately — the other options here are metrics (RPO, MTBF, MTTR), not facility types.'},{q:'An organization places a server with deliberately weak security on its network to attract attackers. This is called a:',o:['Jump server','DMZ gateway','Honeypot','Bastion host'],a:2,e:'A honeypot is a deliberately vulnerable-looking system placed to attract and study attackers, distinct from a jump server or bastion host used for legitimate access.'}],
+[{q:'A security analyst disconnects an infected web server from the corporate network to prevent malware spreading. This occurs during which IR phase?',o:['Preparation','Detection','Containment','Eradication'],a:2,e:'Containment is the IR phase focused on stopping the spread — disconnecting an infected host isolates the threat before eradication or recovery can begin.'},{q:'A tool alerts when a user accessed 200 sensitive files at 3AM which is ten times their normal activity baseline. This tool is called:',o:['SIEM','DLP','UEBA','EDR'],a:2,e:'User and Entity Behavior Analytics baselines normal activity with machine learning and flags statistically abnormal behavior, like this 3AM access spike.'},{q:'Which access control model allows a nurse to access patient records only during their shift hours and only from a hospital workstation?',o:['DAC','RBAC','MAC','ABAC'],a:3,e:'Attribute-Based Access Control can combine multiple conditions — role, time of day, location — making it the only model precise enough for shift-and-location rules.'},{q:'When seizing a hard drive for forensic investigation, what is the FIRST action to ensure evidence remains admissible in court?',o:['Run antivirus scan','Create a forensic image','Review the file contents','Establish and document chain of custody'],a:3,e:'Chain of custody documentation must begin immediately, tracking every person who handles the evidence, or it risks being ruled inadmissible in court.'},{q:'An organization wants employees to use a single login for email, HR system, and project tools without re-entering credentials. This is called:',o:['MFA','SSO','RBAC','PAM'],a:1,e:'Single Sign-On lets a user authenticate once and access multiple connected applications without re-entering credentials each time.'},{q:'A platform that automatically isolates a compromised host, opens a help desk ticket, and notifies the team without human intervention is:',o:['SIEM correlation','IPS blocking','SOAR automation','EDR containment'],a:2,e:'SOAR platforms execute automated playbooks — isolating hosts, opening tickets, notifying teams — without requiring a human to act on each step.'},{q:'A forensic analyst needs to find fileless malware that exists only in active memory and leaves no disk artifacts. The appropriate tool is:',o:['Wireshark','Nessus','Volatility','Autopsy'],a:2,e:'Volatility is a memory forensics framework built specifically to analyze RAM captures and find malware that never touches disk.'},{q:'An employee uses their fingerprint to unlock a mobile device for corporate email access. This is which authentication factor?',o:['Something you know','Something you have','Something you are','Somewhere you are'],a:2,e:'A fingerprint is a biological trait unique to the user — the \'something you are\' (inherence) authentication factor.'},{q:'An employee is emailing customer lists to a personal Gmail account every Friday after 5PM. Which tool should have detected and blocked this?',o:['SIEM platform','EDR solution','DLP system','FIM tool'],a:2,e:'Data Loss Prevention monitors and blocks unauthorized transmission of sensitive data, including large exports to a personal email account.'},{q:'The IR team has removed ransomware from all infected systems and is now rebuilding systems and restoring data from clean backups. Which IR phase is this?',o:['Recovery','Eradication','Lessons Learned','Containment'],a:0,e:'Recovery is the IR phase where systems are rebuilt and restored to normal production from clean backups, after the threat has already been eradicated.'},{q:'A security team conducts a discussion-based exercise where staff talk through their roles in a simulated ransomware attack without touching live systems. This is a:',o:['Tabletop exercise','Penetration test','Red team engagement','Vulnerability scan'],a:0,e:'A tabletop exercise is a low-risk, discussion-based walkthrough of an incident scenario, where team members talk through their responses without touching live systems, unlike a live simulation or red team engagement.'},{q:'A file integrity monitoring tool alerts that a critical system file was modified outside the scheduled patch window. This is most useful for detecting:',o:['Network congestion','Unauthorized changes or attacker persistence','Weak password policies','Cloud misconfigurations'],a:1,e:'FIM tracks cryptographic hashes of critical files and alerts on unexpected changes, a strong signal of unauthorized modification or an attacker maintaining persistence on the system.'},{q:'An organization grants a contractor temporary, time-limited elevated access to a production database, with the session fully recorded for audit. This is an example of:',o:['RBAC','Privileged Access Management (PAM)','MAC','Federation'],a:1,e:'PAM solutions grant just-in-time, time-limited privileged access and record sessions for audit, exactly the controlled, temporary elevated-access scenario described here.'},{q:'During an incident, the response team determines the malware entered through a phishing email opened three days before detection. Which IR phase does this timeline reconstruction belong to?',o:['Preparation','Analysis','Containment','Lessons Learned'],a:1,e:'Analysis is the IR phase where the team investigates scope, root cause, and timeline of an incident, determining how and when the attacker gained entry.'}],
+[{q:'If ALE equals $100,000 and ARO equals 0.25, what is the Single Loss Expectancy (SLE)?',o:['$25,000','$400,000','$75,000','$100,250'],a:1,e:'ALE = SLE times ARO, so SLE = ALE divided by ARO = $100,000 / 0.25 = $400,000.'},{q:'A hospital\'s EHR system goes down and clinical staff cannot access patient medication records. Which regulation is MOST directly relevant?',o:['PCI DSS','SOX','GDPR','HIPAA'],a:3,e:'HIPAA specifically governs the privacy and security of protected health information in US healthcare systems, including electronic health records.'},{q:'A company stops accepting credit card numbers and redirects to a third-party payment processor. This represents which risk management strategy?',o:['Risk mitigation','Risk transfer','Risk avoidance','Risk acceptance'],a:2,e:'Avoidance means eliminating the risky activity entirely — by no longer accepting card numbers directly, the company removes that exposure rather than reducing or insuring it.'},{q:'Which specific document must be signed BEFORE a penetration test begins to define authorized scope and permitted attack methods?',o:['Service Level Agreement','Non-Disclosure Agreement','Rules of engagement','Business Partners Agreement'],a:2,e:'Rules of engagement define the authorized scope, timing, and permitted methods for a penetration test, and must be signed before testing begins.'},{q:'A company purchases cyber liability insurance covering breach notification, legal fees, and regulatory fines. This is classified as risk:',o:['Mitigation','Avoidance','Transfer','Acceptance'],a:2,e:'Buying insurance shifts the financial impact of a risk to a third party, the insurer — the textbook definition of risk transfer.'},{q:'A risk analyst is calculating how often a specific risk event is expected to occur per year. Which metric does this represent?',o:['SLE','ALE','ARO','Exposure factor'],a:2,e:'Annualized Rate of Occurrence measures how often a risk event is expected to happen per year, feeding into the ALE calculation.'},{q:'A company\'s BCP states the payroll system must be restored and operational within 4 hours of any failure. This 4-hour requirement is the:',o:['RPO (Recovery Point Objective)','MTD (Maximum Tolerable Downtime)','RTO (Recovery Time Objective)','MTBF (Mean Time Between Failures)'],a:2,e:'RTO defines the maximum acceptable downtime before a system must be restored — a 4-hour RTO means payroll must be back up within 4 hours.'},{q:'Which US regulation specifically protects the privacy and security of individually identifiable health information in electronic form?',o:['GDPR','PCI DSS','HIPAA','SOX'],a:2,e:'HIPAA is the US law that specifically protects individually identifiable health information held or transmitted in electronic form.'},{q:'A company announces external researchers may submit discovered vulnerabilities in exchange for monetary rewards. This is called a:',o:['Penetration testing engagement','Red team exercise','Bug bounty program','Vulnerability assessment'],a:2,e:'A bug bounty program pays external researchers for responsibly disclosing vulnerabilities they find, unlike a company-run pen test or red team.'},{q:'Which of the 5 NIST CSF functions focuses on developing organizational understanding of cybersecurity risk to systems, assets, and data?',o:['Protect','Detect','Respond','Identify'],a:3,e:'Identify is the first NIST CSF function, focused on understanding the organization\'s assets, risks, and cybersecurity posture before protecting or detecting anything.'}],
 ];
 
 const FIRST_PREP = [
@@ -587,7 +614,7 @@ const FIRST_PREP = [
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
-let ST = { xp:0, lv:1, lvxp:0, bs:0, c:0, s:0, m:0, bw:0, sb:0, dom:[], mod:[], ach:[] };
+let ST = { xp:0, lv:1, lvxp:0, bs:0, c:0, s:0, m:0, bw:0, sb:0, dom:[], mod:[], ach:[], modAcc:{}, domAcc:{} };
 let streak = 0, spTimer = null;
 let fcCards = [], fcI = 0, fcKn = new Set(), fcRv = new Set();
 let spPool = [], spI = 0, spC = 0, spAns = [];
@@ -595,12 +622,13 @@ let tfPool = [], tfI = 0, tfC = 0, tfAns = [];
 let aPool = [], aI = 0, aC = 0, aAns = [], aOpts = [];
 let fibPool = [], fibI = 0, fibC = 0, fibAns = [], fibOpts = [];
 let mTiles = [], mSel = null, mMat = 0, mDom = 0, mStart = 0, mPairs = [];
-let bI = 0, bQ = 0, bHP = 0, pHP = 0, bAns = [];
+let bI = 0, bQ = 0, bHP = 0, pHP = 0, bAns = [], bQs = [];
 let dDom = 0, dI = 0, dC = 0, dQ = [], dAns = [];
 let svLives = 3, svC = 0, svI = 0, svHist = [], svAns = [], svDrawPool = [], svDrawIdx = 0;
 let ptPool = [], ptI = 0, ptC = 0, ptAns = [];
 let notesI = 0;
 let fpPool = [], fpI = 0, fpC = 0, fpAns = [];
+let drillPool = [], drillI = 0, drillC = 0, drillAns = [], drillOpts = [], drillMod = 0;
 const FIRST_PREP_EXAM_LENGTH = 90;
 
 // ─── PERSIST ───
@@ -645,6 +673,8 @@ function load() {
     ST.dom = d.dom || [];
     ST.mod = d.mod || [];
     ST.ach = d.ach || [];
+    ST.modAcc = d.modAcc || {};
+    ST.domAcc = d.domAcc || {};
   } catch (e) { /* ignore corrupt data */ }
 }
 
@@ -654,6 +684,16 @@ function addXP(n) {
   const need = ST.lv * 120;
   if (ST.lvxp >= need) { ST.lvxp -= need; ST.lv++; showToast('⬆️ Level ' + ST.lv + '!', 'blue'); }
   save(); refreshHeader(); refreshHomeStats();
+}
+function bumpModAcc(m, ok) {
+  if (m === undefined || m === null) return;
+  if (!ST.modAcc[m]) ST.modAcc[m] = { c: 0, t: 0 };
+  ST.modAcc[m].t++; if (ok) ST.modAcc[m].c++;
+}
+function bumpDomAcc(d, ok) {
+  if (d === undefined || d === null) return;
+  if (!ST.domAcc[d]) ST.domAcc[d] = { c: 0, t: 0 };
+  ST.domAcc[d].t++; if (ok) ST.domAcc[d].c++;
 }
 function refreshHeader() {
   const need = ST.lv * 120;
@@ -778,18 +818,27 @@ function optBtnHtml(i, text, correctIdx, chosenIdx, btnClass) {
   }
   return '<button class="' + cls + '" data-i="' + i + '"' + (chosenIdx !== null && chosenIdx !== undefined ? ' disabled' : '') + '>' + text + '</button>';
 }
+// Small caption connecting an exam domain to the course modules whose content maps into it.
+function moduleBridgeHtml(domainIdx) {
+  const mods = DOMAIN_MODULES[domainIdx];
+  if (!mods || !mods.length) return '';
+  const names = mods.map(m => MODULES[m].replace(' — Mixed Review', '')).join(', ');
+  return '<div style="font-size:10px;color:#8b91b0;margin-top:2px">Covers your modules: ' + names + '</div>';
+}
 
 // ─── BUILD HOME ───
 function buildHome() {
   const modes = [
-    { id:'flash', ic:'🃏', t:'Flashcards',       d:'220+ cards with definitions and real examples.', b:'220 cards', cls:'badge-info'  },
+    { id:'flash', ic:'🃏', t:'Flashcards',       d:'145 cards with definitions and real examples.', b:'145 cards', cls:'badge-info'  },
     { id:'speed', ic:'⚡', t:'Speed Round',       d:'15 seconds per question. Build streaks for bonus XP.', b:'Timed', cls:'badge-info' },
     { id:'tf',    ic:'✅', t:'True / False',      d:'25 tricky statements testing common misconceptions.', b:'Quick', cls:'badge-info' },
-    { id:'acr',   ic:'🔤', t:'Acronym Blitz',     d:'Every acronym on the SY0-701 exam.', b:'50 acr.', cls:'badge-info' },
+    { id:'acr',   ic:'🔤', t:'Acronym Blitz',     d:'Every acronym on the SY0-701 exam, with a short definition after each answer.', b:'50 acr.', cls:'badge-info' },
     { id:'fib',   ic:'📝', t:'Fill the Blank',    d:'Complete the definition or scenario from context.', b:'Scenario', cls:'badge-info' },
     { id:'match', ic:'🔗', t:'Match It',          d:'Match terms to definitions. All 9 course modules.', b:'Memory', cls:'badge-info' },
-    { id:'boss',  ic:'👾', t:'Boss Quiz',         d:'5 domain bosses. Wrong answers cost HP.', b:'5 Bosses', cls:'badge-info' },
-    { id:'dex',   ic:'📋', t:'Domain Exam',       d:'10 scenario questions per domain. Scored like the real test.', b:'NEW', cls:'badge-new' },
+    { id:'drill', ic:'🎯', t:'Focused Drill',     d:'Deep-dive one module — term-matching straight from its flashcards.', b:'NEW', cls:'badge-new' },
+    { id:'weak',  ic:'📊', t:'Weak Areas',        d:'See your accuracy by module and by exam domain.', b:'Insights', cls:'badge-new' },
+    { id:'boss',  ic:'👾', t:'Boss Quiz',         d:'5 domain bosses, HP scaled to real exam weighting.', b:'5 Bosses', cls:'badge-info' },
+    { id:'dex',   ic:'📋', t:'Domain Exam',       d:'Scenario questions per domain, scaled to real exam weighting. Scored like the real test.', b:'NEW', cls:'badge-new' },
     { id:'surv',  ic:'❤️', t:'Survival Mode',     d:'3 lives. Answer until you run out. Beat your score.', b:'NEW', cls:'badge-new' },
     { id:'ports', ic:'🔌', t:'Ports & Protocols', d:'Which service runs on that port? Heavily tested on SY0-701.', b:'NEW', cls:'badge-new' },
     { id:'notes', ic:'📚', t:'Study Notes',       d:'Full reference sheet for all 9 course modules. Read before testing.', b:'Ref', cls:'badge-info' },
@@ -834,6 +883,8 @@ function startMode(m) {
   else if (m === 'acr')    startAcr();
   else if (m === 'fib')    startFIB();
   else if (m === 'match')  startMatch(0);
+  else if (m === 'drill')  showDrillSelect();
+  else if (m === 'weak')   showWeakAreas();
   else if (m === 'boss')   showBossSelect();
   else if (m === 'dex')    showDexSelect();
   else if (m === 'surv')   startSurv();
@@ -844,6 +895,145 @@ function startMode(m) {
 function startDomainFlash(d) {
   if (!ST.mod.includes(d)) { ST.mod.push(d); save(); }
   startFlash(d < 9 ? CARDS.filter(c => c.m === d) : [...CARDS]);
+}
+
+// ─── FOCUSED MODULE DRILL ───
+// Term-matching quiz auto-generated from a single module's flashcards — deep-dive practice
+// without needing separately-authored content per module.
+function showDrillSelect() {
+  showGame('🎯 Focused Drill');
+  setProg(0, 9);
+  setBody(
+    '<p style="font-size:12px;color:#6b7299;margin-bottom:.9rem">Pick a module to deep-dive — term-matching questions drawn straight from its flashcards.</p>' +
+    '<div style="display:flex;flex-direction:column;gap:.5rem">' +
+    MODULES.map((mn, i) =>
+      '<div class="mode-card" id="drill-sel-' + i + '" style="cursor:pointer">' +
+      '<div class="mode-title">' + (i < 9 ? 'Module ' + (i+1) : 'Module 10') + ': ' + mn + '</div>' +
+      '<div class="mode-desc">' + (i < 9 ? CARDS.filter(c => c.m === i).length + ' terms in this module' : 'Mixed drill across every module') + '</div>' +
+      '</div>'
+    ).join('') + '</div>'
+  );
+  MODULES.forEach((_, i) => {
+    const el = document.getElementById('drill-sel-' + i);
+    if (el) el.addEventListener('click', () => startDrill(i));
+  });
+}
+function startDrill(m, customPool) {
+  drillMod = m;
+  drillPool = customPool || shuf(m < 9 ? CARDS.filter(c => c.m === m) : [...CARDS]);
+  drillI = 0; drillC = 0; drillAns = []; drillOpts = [];
+  showGame('🎯 Drill: ' + MODULES[m]);
+  renderDrill();
+}
+function renderDrill() {
+  if (drillI >= drillPool.length) { endDrill(); return; }
+  setProg(drillI, drillPool.length);
+  const q = drillPool[drillI];
+  const ans = drillAns[drillI];
+  if (!drillOpts[drillI]) {
+    const wrongs = shuf(CARDS.filter(c => c.t !== q.t)).slice(0, 3);
+    drillOpts[drillI] = shuf([q, ...wrongs]);
+  }
+  const opts = drillOpts[drillI];
+  const correctIdx = opts.findIndex(o => o.t === q.t);
+  setBody(
+    '<div class="card">' +
+      '<div style="font-size:10px;color:#6b7299;margin-bottom:.4rem">Q' + (drillI+1) + ' of ' + drillPool.length + ' · ' + MODULES[drillMod] + '</div>' +
+      '<div class="q-text">Which term matches:<br><i>"' + q.df + '"</i></div>' +
+      '<div class="opts-grid" id="drill-opts">' +
+        opts.map((o, i) => optBtnHtml(i, o.t, correctIdx, ans ? ans.ch : null, 'opt-btn')).join('') +
+      '</div>' +
+      '<div class="exp-box' + (ans ? ' show' + (ans.ok ? '' : ' wrong') : '') + '" id="drill-exp">' + (ans ? (ans.ok ? '✓ ' : '✗ ') + q.t + (q.ex ? '<br><span style="font-weight:400">' + q.ex + '</span>' : '') : '') + '</div>' +
+    '</div>' +
+    navRowHtml(drillI > 0, !!ans, drillI === drillPool.length - 1)
+  );
+  if (!ans) {
+    document.getElementById('drill-opts').querySelectorAll('.opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => pickDrill(parseInt(btn.getAttribute('data-i')), correctIdx));
+    });
+  }
+  wireNav(() => { drillI--; renderDrill(); }, () => { drillI++; renderDrill(); });
+}
+function pickDrill(ch, correctIdx) {
+  const q = drillPool[drillI]; const ok = ch === correctIdx;
+  if (ok) { drillC++; addXP(10); }
+  bumpStreak(ok);
+  bumpModAcc(q.m, ok);
+  drillAns[drillI] = { ch, ok };
+  renderDrill();
+}
+function endDrill() {
+  const pct = Math.round((drillC / drillPool.length) * 100);
+  const missed = drillPool.filter((q, i) => drillAns[i] && !drillAns[i].ok);
+  setBody(makeResPanel(drillC * 10, pct, drillC + ' / ' + drillPool.length + ' correct',
+    MODULES[drillMod] + ' — ' + (pct >= 80 ? 'Strong mastery!' : pct >= 50 ? 'Getting there.' : 'Keep drilling this module.'),
+    '<button class="btn-res primary" id="btn-rep">Drill Again</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-wk">Weak Areas</button>' +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
+  ));
+  document.getElementById('btn-rep').addEventListener('click', () => startDrill(drillMod));
+  document.getElementById('btn-wk').addEventListener('click', showWeakAreas);
+  document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startDrill(drillMod, missed));
+}
+
+// ─── WEAK AREAS DASHBOARD ───
+function showWeakAreas() {
+  showGame('📊 Weak Areas');
+  setProg(1, 1);
+  function barColor(pct) {
+    if (pct === null) return '#6b7299';
+    if (pct >= 80) return '#22c55e';
+    if (pct >= 50) return '#f59e0b';
+    return '#ef4444';
+  }
+  function rowsFor(names, accMap, count) {
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      const a = accMap[i];
+      const pct = a && a.t > 0 ? Math.round(a.c / a.t * 100) : null;
+      rows.push({ i, name: names[i], pct, t: a ? a.t : 0 });
+    }
+    rows.sort((x, y) => (x.pct === null ? -1 : x.pct) - (y.pct === null ? -1 : y.pct));
+    return rows;
+  }
+  const modRows = rowsFor(MODULES, ST.modAcc, 9);
+  const domRows = rowsFor(DN, ST.domAcc, 5);
+  setBody(
+    '<p style="font-size:12px;color:#6b7299;margin-bottom:.9rem">Weakest first. Tap a module to jump straight into a focused drill.</p>' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:.5rem">📚 Module Mastery <span style="font-weight:400;color:#6b7299">(from Flashcards)</span></div>' +
+    '<div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.2rem">' +
+    modRows.map(r =>
+      '<div class="mode-card" id="wk-mod-' + r.i + '" style="cursor:pointer;padding:.65rem .85rem">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">' +
+      '<div style="font-size:12.5px;font-weight:600">' + r.name + '</div>' +
+      '<div style="font-size:12px;color:' + barColor(r.pct) + ';font-weight:700;white-space:nowrap">' + (r.pct === null ? 'Not studied' : r.pct + '%') + '</div>' +
+      '</div>' +
+      (r.pct !== null ? '<div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:' + r.pct + '%;background:' + barColor(r.pct) + '"></div></div>' : '') +
+      '</div>'
+    ).join('') +
+    '</div>' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:.5rem">🎯 Domain Readiness <span style="font-weight:400;color:#6b7299">(from Boss Quiz + Domain Exam)</span></div>' +
+    '<div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.1rem">' +
+    domRows.map(r =>
+      '<div class="mode-card" style="padding:.65rem .85rem">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">' +
+      '<div style="font-size:12.5px;font-weight:600">Domain ' + (r.i+1) + '.0: ' + r.name + '</div>' +
+      '<div style="font-size:12px;color:' + barColor(r.pct) + ';font-weight:700;white-space:nowrap">' + (r.pct === null ? 'Not attempted' : r.pct + '%') + '</div>' +
+      '</div>' +
+      (r.pct !== null ? '<div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:' + r.pct + '%;background:' + barColor(r.pct) + '"></div></div>' : '') +
+      moduleBridgeHtml(r.i) +
+      '</div>'
+    ).join('') +
+    '</div>' +
+    '<div style="text-align:center"><button class="btn-res secondary" id="btn-hm">Home</button></div>'
+  );
+  modRows.forEach(r => {
+    const el = document.getElementById('wk-mod-' + r.i);
+    if (el) el.addEventListener('click', () => startDrill(r.i));
+  });
+  document.getElementById('btn-hm').addEventListener('click', showHome);
 }
 
 function makeResPanel(xpEarned, pct, title, sub, btns) {
@@ -893,11 +1083,11 @@ function renderFC() {
   if (btnBk) btnBk.addEventListener('click', () => { fcI--; renderFC(); });
   const btnKn = document.getElementById('btn-kn');
   if (btnKn) btnKn.addEventListener('click', () => {
-    fcKn.add(fcI); ST.m++; addXP(5); bumpStreak(true); fcI++; renderFC();
+    fcKn.add(fcI); ST.m++; addXP(5); bumpStreak(true); bumpModAcc(c.m, true); fcI++; renderFC();
   });
   const btnRv = document.getElementById('btn-rv');
   if (btnRv) btnRv.addEventListener('click', () => {
-    fcRv.add(fcI); bumpStreak(false); fcI++; renderFC();
+    fcRv.add(fcI); bumpStreak(false); bumpModAcc(c.m, false); fcI++; renderFC();
   });
   const btnSk = document.getElementById('btn-sk');
   if (btnSk) btnSk.addEventListener('click', () => { fcI++; renderFC(); });
@@ -918,8 +1108,8 @@ function endFlash() {
 }
 
 // ─── SPEED ROUND ───
-function startSpeed() {
-  spPool = shuf([...SPEED]).slice(0, 20); spI = 0; spC = 0; spAns = [];
+function startSpeed(customPool) {
+  spPool = customPool || shuf([...SPEED]).slice(0, 20); spI = 0; spC = 0; spAns = [];
   showGame('⚡ Speed Round'); renderSpeed();
 }
 function renderSpeed() {
@@ -970,15 +1160,19 @@ function pickSpeed(ch) {
 }
 function endSpeed() {
   const pct = Math.round((spC / spPool.length) * 100);
+  const missed = spPool.filter((q, i) => spAns[i] && !spAns[i].ok);
   setBody(makeResPanel(spC * 10, pct, spC + ' / ' + spPool.length + ' correct', 'Best streak: ' + ST.bs + ' 🔥',
-    '<button class="btn-res primary" id="btn-rep">Play Again</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rep">Play Again</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
-  document.getElementById('btn-rep').addEventListener('click', startSpeed);
+  document.getElementById('btn-rep').addEventListener('click', () => startSpeed());
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startSpeed(missed));
 }
 
 // ─── TRUE / FALSE ───
-function startTF() { tfPool = shuf([...TF]); tfI = 0; tfC = 0; tfAns = []; showGame('✅ True or False'); renderTF(); }
+function startTF(customPool) { tfPool = customPool || shuf([...TF]); tfI = 0; tfC = 0; tfAns = []; showGame('✅ True or False'); renderTF(); }
 function renderTF() {
   if (tfI >= tfPool.length) { endTF(); return; }
   setProg(tfI, tfPool.length);
@@ -1011,17 +1205,21 @@ function pickTF(ch) {
 }
 function endTF() {
   const pct = Math.round((tfC / tfPool.length) * 100);
+  const missed = tfPool.filter((q, i) => tfAns[i] && !tfAns[i].ok);
   if (pct >= 90 && !ST.ach.includes('atf')) { ST.ach.push('atf'); showToast('🏆 T/F Champion!', 'blue'); renderAch(); save(); }
   setBody(makeResPanel(tfC * 8, pct, tfC + ' / ' + tfPool.length + ' correct',
     pct >= 80 ? 'Excellent conceptual understanding!' : pct >= 50 ? 'Review the incorrect ones.' : 'Study flashcards then retry.',
-    '<button class="btn-res primary" id="btn-rep">Play Again</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rep">Play Again</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
-  document.getElementById('btn-rep').addEventListener('click', startTF);
+  document.getElementById('btn-rep').addEventListener('click', () => startTF());
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startTF(missed));
 }
 
 // ─── ACRONYM BLITZ ───
-function startAcr() { aPool = shuf([...ACRONYMS]).slice(0, 20); aI = 0; aC = 0; aAns = []; aOpts = []; showGame('🔤 Acronym Blitz'); renderAcr(); }
+function startAcr(customPool) { aPool = customPool || shuf([...ACRONYMS]).slice(0, 20); aI = 0; aC = 0; aAns = []; aOpts = []; showGame('🔤 Acronym Blitz'); renderAcr(); }
 function renderAcr() {
   if (aI >= aPool.length) { endAcr(); return; }
   setProg(aI, aPool.length);
@@ -1062,17 +1260,21 @@ function pickAcr(ch, correctIdx) {
 }
 function endAcr() {
   const pct = Math.round((aC / aPool.length) * 100);
+  const missed = aPool.filter((q, i) => aAns[i] && !aAns[i].ok);
   if (pct === 100 && !ST.ach.includes('aacr')) { ST.ach.push('aacr'); showToast('🏆 Acronym Master!', 'blue'); renderAch(); save(); }
   setBody(makeResPanel(aC * 10, pct, aC + ' / ' + aPool.length + ' acronyms',
     pct === 100 ? '🏆 Acronym Master unlocked!' : pct >= 80 ? 'Almost perfect!' : 'Acronyms are heavily tested. Keep drilling!',
-    '<button class="btn-res primary" id="btn-rep">Play Again</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rep">Play Again</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
-  document.getElementById('btn-rep').addEventListener('click', startAcr);
+  document.getElementById('btn-rep').addEventListener('click', () => startAcr());
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startAcr(missed));
 }
 
 // ─── FILL IN THE BLANK ───
-function startFIB() { fibPool = shuf([...FIB]); fibI = 0; fibC = 0; fibAns = []; fibOpts = []; showGame('📝 Fill the Blank'); renderFIB(); }
+function startFIB(customPool) { fibPool = customPool || shuf([...FIB]); fibI = 0; fibC = 0; fibAns = []; fibOpts = []; showGame('📝 Fill the Blank'); renderFIB(); }
 function renderFIB() {
   if (fibI >= fibPool.length) { endFIB(); return; }
   setProg(fibI, fibPool.length);
@@ -1109,12 +1311,16 @@ function pickFIB(ch, correctIdx) {
 }
 function endFIB() {
   const pct = Math.round((fibC / fibPool.length) * 100);
+  const missed = fibPool.filter((q, i) => fibAns[i] && !fibAns[i].ok);
   setBody(makeResPanel(fibC * 10, pct, fibC + ' / ' + fibPool.length + ' correct',
     pct >= 80 ? 'Strong contextual recall!' : pct >= 50 ? 'Review missed terms in flashcards.' : 'Study flashcards first then retry.',
-    '<button class="btn-res primary" id="btn-rep">Play Again</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rep">Play Again</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
-  document.getElementById('btn-rep').addEventListener('click', startFIB);
+  document.getElementById('btn-rep').addEventListener('click', () => startFIB());
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startFIB(missed));
 }
 
 // ─── MATCH IT ───
@@ -1201,13 +1407,13 @@ function showBossSelect() {
   showGame('👾 Boss Quiz');
   setProg(0, 5);
   setBody(
-    '<p style="font-size:12px;color:#6b7299;margin-bottom:.9rem">5 domain bosses · 6 HP each · Wrong answers cost 2 HP · Defeat all 5!</p>' +
+    '<p style="font-size:12px;color:#6b7299;margin-bottom:.9rem">5 domain bosses, HP scaled to real exam weighting · Wrong answers cost 2 HP · Defeat all 5!</p>' +
     '<div style="display:flex;flex-direction:column;gap:.55rem">' +
     BOSSES.map((b, i) =>
       '<div class="mode-card" id="boss-sel-' + i + '" style="cursor:pointer">' +
       '<div style="display:flex;align-items:center;gap:9px">' +
       '<span style="font-size:24px">' + b.ic + '</span>' +
-      '<div><div class="mode-title">' + b.n + '</div><div class="mode-desc">' + b.dm + '</div></div>' +
+      '<div><div class="mode-title">' + b.n + '</div><div class="mode-desc">' + b.dm + ' · ' + BOSS_COUNTS[i] + ' HP' + moduleBridgeHtml(i) + '</div></div>' +
       '<span style="margin-left:auto">' + '⭐'.repeat(i + 1) + '</span>' +
       '</div></div>'
     ).join('') +
@@ -1218,26 +1424,28 @@ function showBossSelect() {
     if (el) el.addEventListener('click', () => startBoss(i));
   });
 }
-function startBoss(i) {
-  bI = i; bQ = 0; pHP = 10; bHP = BOSSES[i].qs.length; bAns = [];
+function startBoss(i, customQs) {
+  bI = i; bQ = 0; pHP = 10; bAns = [];
+  bQs = customQs || shuf([...BOSSES[i].qs]).slice(0, BOSS_COUNTS[i]);
+  bHP = bQs.length;
   showGame(BOSSES[i].ic + ' vs ' + BOSSES[i].n);
   setProg(i, 5);
   renderBoss();
 }
 function renderBoss() {
   const b = BOSSES[bI];
-  if (bQ >= b.qs.length || pHP <= 0) { endBoss(); return; }
-  const q = b.qs[bQ];
+  if (bQ >= bQs.length || pHP <= 0) { endBoss(); return; }
+  const q = bQs[bQ];
   const ans = bAns[bQ];
-  const fightOver = bHP <= 0 || pHP <= 0 || bQ >= b.qs.length - 1;
+  const fightOver = bHP <= 0 || pHP <= 0 || bQ >= bQs.length - 1;
   setBody(
     '<div class="boss-area">' +
       '<div class="boss-hdr">' +
         '<span class="boss-icon">' + b.ic + '</span>' +
         '<div style="flex:1">' +
           '<div class="boss-name">' + b.n + '</div>' +
-          '<div style="font-size:10px;color:#6b7299;margin-bottom:3px">Boss HP: ' + Math.max(bHP, 0) + ' / ' + b.qs.length + '</div>' +
-          '<div class="hp-bar"><div class="hp-fill" style="width:' + (Math.max(bHP, 0) / b.qs.length * 100) + '%"></div></div>' +
+          '<div style="font-size:10px;color:#6b7299;margin-bottom:3px">Boss HP: ' + Math.max(bHP, 0) + ' / ' + bQs.length + '</div>' +
+          '<div class="hp-bar"><div class="hp-fill" style="width:' + (Math.max(bHP, 0) / bQs.length * 100) + '%"></div></div>' +
         '</div>' +
       '</div>' +
       '<div class="boss-q">⚔️ ' + q.q + '</div>' +
@@ -1257,20 +1465,22 @@ function renderBoss() {
     });
   }
   wireNav(() => { bQ--; renderBoss(); }, () => {
-    if (bHP <= 0 || pHP <= 0 || bQ >= b.qs.length - 1) endBoss();
+    if (bHP <= 0 || pHP <= 0 || bQ >= bQs.length - 1) endBoss();
     else { bQ++; renderBoss(); }
   });
 }
 function pickBoss(ch) {
-  const b = BOSSES[bI]; const q = b.qs[bQ]; const ok = ch === q.a;
+  const q = bQs[bQ]; const ok = ch === q.a;
   if (ok) { bHP--; addXP(20); bumpStreak(true); showToast('⚔️ Hit! +20 XP', 'green'); }
   else    { pHP -= 2; bumpStreak(false); showToast('💢 Ouch! −2 HP', 'red'); }
+  bumpDomAcc(bI, ok);
   bAns[bQ] = { ch, ok };
   renderBoss();
 }
 function endBoss() {
-  const b = BOSSES[bI]; const won = bHP <= 0 || (bQ >= b.qs.length - 1 && pHP > 0 && bAns[bQ]);
+  const b = BOSSES[bI]; const won = bHP <= 0 || (bQ >= bQs.length - 1 && pHP > 0 && bAns[bQ]);
   if (won) { ST.bw++; checkAch(); save(); }
+  const missed = bQs.filter((q, i) => bAns[i] && !bAns[i].ok);
   setBody(
     '<div class="res-panel">' +
     '<div class="res-ring ' + (won ? 'great' : 'bad') + '">' + (won ? '🏆' : '💀') + '</div>' +
@@ -1278,6 +1488,7 @@ function endBoss() {
     '<p>' + b.n + ' · ' + b.dm + '<br>' + (won ? 'Domain mastered! Try the next boss.' : 'Study flashcards for this domain and retry!') + '</p>' +
     '<div class="res-btns">' +
       '<button class="btn-res primary" id="btn-rr">Retry</button>' +
+      (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
       (bI < 4 ? '<button class="btn-res secondary" id="btn-rn">Next Boss →</button>' : '') +
       '<button class="btn-res secondary" id="btn-bs">All Bosses</button>' +
       '<button class="btn-res secondary" id="btn-hm">Home</button>' +
@@ -1287,6 +1498,7 @@ function endBoss() {
   document.getElementById('btn-bs').addEventListener('click', showBossSelect);
   document.getElementById('btn-hm').addEventListener('click', showHome);
   if (bI < 4) document.getElementById('btn-rn').addEventListener('click', () => startBoss(bI + 1));
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startBoss(bI, missed));
 }
 
 // ─── DOMAIN EXAM ───
@@ -1296,13 +1508,13 @@ function showDexSelect() {
   setBody(
     '<div style="background:rgba(91,127,255,.08);border:1px solid rgba(91,127,255,.2);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center">' +
     '<div style="font-size:14px;font-weight:700;margin-bottom:.25rem">📋 Domain Exam</div>' +
-    '<div style="font-size:12px;color:#6b7299">10 scenario questions per domain · Scored like the real test</div></div>' +
+    '<div style="font-size:12px;color:#6b7299">Question count per domain is scaled to real exam weighting · Scored like the real test</div></div>' +
     '<div style="display:flex;flex-direction:column;gap:.55rem">' +
     DN.map((d, i) =>
       '<div class="mode-card" id="dex-sel-' + i + '">' +
       '<div style="position:relative;z-index:1">' +
       '<div class="mode-title">Domain ' + (i+1) + '.0: ' + d + '</div>' +
-      '<div class="mode-desc">10 scenario-based questions</div>' +
+      '<div class="mode-desc">' + DEX_COUNTS[i] + ' scenario-based questions' + moduleBridgeHtml(i) + '</div>' +
       '</div></div>'
     ).join('') + '</div>'
   );
@@ -1311,11 +1523,11 @@ function showDexSelect() {
     if (el) el.addEventListener('click', () => startDex(i));
   });
 }
-function startDex(d) {
-  dDom = d; dQ = shuf([...DEX[d]]).slice(0, 10); dI = 0; dC = 0; dAns = [];
+function startDex(d, customPool) {
+  dDom = d; dQ = customPool || shuf([...DEX[d]]).slice(0, DEX_COUNTS[d]); dI = 0; dC = 0; dAns = [];
   if (!ST.dom.includes(d)) { ST.dom.push(d); save(); }
   showGame('📋 Domain ' + (d+1) + ': ' + DN[d]);
-  setProg(0, 10);
+  setProg(0, dQ.length);
   renderDex();
 }
 function renderDex() {
@@ -1324,13 +1536,13 @@ function renderDex() {
   const q = dQ[dI];
   const ans = dAns[dI];
   setBody(
-    '<div style="font-size:10px;color:#6b7299;margin-bottom:.45rem">Q' + (dI+1) + ' of 10 · ' + DN[dDom] + '</div>' +
+    '<div style="font-size:10px;color:#6b7299;margin-bottom:.45rem">Q' + (dI+1) + ' of ' + dQ.length + ' · ' + DN[dDom] + '</div>' +
     '<div class="card">' +
       '<div class="q-text">' + q.q + '</div>' +
       '<div class="opts-grid" id="dex-opts">' +
         q.o.map((o, i) => optBtnHtml(i, o, q.a, ans ? ans.ch : null, 'opt-btn')).join('') +
       '</div>' +
-      '<div class="exp-box' + (ans ? ' show' + (ans.ok ? '' : ' wrong') : '') + '" id="dex-exp">' + (ans ? (ans.ok ? '✓ Correct!' : '✗ Correct answer: ' + q.o[q.a]) : '') + '</div>' +
+      '<div class="exp-box' + (ans ? ' show' + (ans.ok ? '' : ' wrong') : '') + '" id="dex-exp">' + (ans ? (ans.ok ? '✓ Correct! ' : '✗ Correct answer: ' + q.o[q.a] + '. ') + (q.e || '') : '') + '</div>' +
     '</div>' +
     navRowHtml(dI > 0, !!ans, dI === dQ.length - 1)
   );
@@ -1345,24 +1557,29 @@ function pickDex(ch) {
   const q = dQ[dI]; const ok = ch === q.a;
   if (ok) { dC++; addXP(12); }
   bumpStreak(ok);
+  bumpDomAcc(dDom, ok);
   dAns[dI] = { ch, ok };
   renderDex();
 }
 function endDex() {
   const pct = Math.round((dC / dQ.length) * 100);
+  const missed = dQ.filter((q, i) => dAns[i] && !dAns[i].ok);
   setBody(makeResPanel(dC * 12, pct, dC + ' / ' + dQ.length + ' correct',
     'Domain ' + (dDom+1) + '.0 — ' + DN[dDom] + '. ' +
     (pct >= 80 ? 'Excellent domain knowledge!' : pct >= 70 ? 'Passing level — keep reviewing!' : 'Study flashcards for this domain then retry.'),
-    '<button class="btn-res primary" id="btn-rr">Retry Domain</button><button class="btn-res secondary" id="btn-ds">Other Domains</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rr">Retry Domain</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-ds">Other Domains</button><button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
   document.getElementById('btn-rr').addEventListener('click', () => startDex(dDom));
   document.getElementById('btn-ds').addEventListener('click', showDexSelect);
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startDex(dDom, missed));
 }
 
 // ─── FIRST PREPARATION (90-question full mock exam) ───
-function startFirstPrep() {
-  fpPool = shuf([...FIRST_PREP]).slice(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
+function startFirstPrep(customPool) {
+  fpPool = customPool || shuf([...FIRST_PREP]).slice(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
   fpI = 0; fpC = 0; fpAns = [];
   showGame('🎓 First Preparation');
   setProg(0, fpPool.length);
@@ -1401,14 +1618,18 @@ function pickFirstPrep(ch) {
 function endFirstPrep() {
   const pct = Math.round((fpC / fpPool.length) * 100);
   const passed = pct >= 83;
+  const missed = fpPool.filter((q, i) => fpAns[i] && !fpAns[i].ok);
   if (passed && !ST.ach.includes('afprep')) { ST.ach.push('afprep'); showToast('🏆 First Preparation Passed!', 'blue'); renderAch(); save(); }
   setBody(makeResPanel(fpC * 15, pct, fpC + ' / ' + fpPool.length + ' correct',
     'CompTIA Security+ passes at roughly 750/900 (~83%). ' +
     (passed ? '🎉 That would be a PASS on the real exam — excellent work!' : pct >= 70 ? 'Close — a bit more review and you\'ll clear the passing bar.' : 'Below passing level. Hit the flashcards and domain exams, then try again.'),
-    '<button class="btn-res primary" id="btn-rep">New 90-Question Run</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rep">New 90-Question Run</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
-  document.getElementById('btn-rep').addEventListener('click', startFirstPrep);
+  document.getElementById('btn-rep').addEventListener('click', () => startFirstPrep());
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startFirstPrep(missed));
 }
 
 // ─── SURVIVAL MODE ───
@@ -1477,7 +1698,7 @@ function endSurv() {
 }
 
 // ─── PORTS & PROTOCOLS ───
-function startPorts() { ptPool = shuf([...PORTS]); ptI = 0; ptC = 0; ptAns = []; showGame('🔌 Ports & Protocols'); renderPort(); }
+function startPorts(customPool) { ptPool = customPool || shuf([...PORTS]); ptI = 0; ptC = 0; ptAns = []; showGame('🔌 Ports & Protocols'); renderPort(); }
 function renderPort() {
   if (ptI >= ptPool.length) { endPorts(); return; }
   setProg(ptI, ptPool.length);
@@ -1511,14 +1732,18 @@ function pickPort(ch) {
 }
 function endPorts() {
   const pct = Math.round((ptC / ptPool.length) * 100);
+  const missed = ptPool.filter((q, i) => ptAns[i] && !ptAns[i].ok);
   if (pct >= 90 && !ST.ach.includes('aport')) { ST.ach.push('aport'); showToast('🏆 Port Master!', 'blue'); renderAch(); save(); }
   setBody(makeResPanel(ptC * 10, pct, ptC + ' / ' + ptPool.length + ' correct',
     pct >= 80 ? 'Port Master! Great memory.' : pct >= 50 ? 'Getting there — drill the missed ones.' : 'Ports are heavily tested! Study the reference sheet.',
-    '<button class="btn-res primary" id="btn-rep">Play Again</button><button class="btn-res secondary" id="btn-nts">Study Notes</button><button class="btn-res secondary" id="btn-hm">Home</button>'
+    '<button class="btn-res primary" id="btn-rep">Play Again</button>' +
+    (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-nts">Study Notes</button><button class="btn-res secondary" id="btn-hm">Home</button>'
   ));
-  document.getElementById('btn-rep').addEventListener('click', startPorts);
+  document.getElementById('btn-rep').addEventListener('click', () => startPorts());
   document.getElementById('btn-nts').addEventListener('click', startNotes);
   document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startPorts(missed));
 }
 
 // ─── STUDY NOTES ───
@@ -1563,7 +1788,7 @@ function initApp() {
     if (!confirm('Reset all progress? XP, streaks, and achievements will be cleared.')) return;
     if (HAS_STORAGE) { try { localStorage.removeItem('sec701g'); } catch (e) {} }
     delete _memStore['sec701g'];
-    ST = { xp:0, lv:1, lvxp:0, bs:0, c:0, s:0, m:0, bw:0, sb:0, dom:[], mod:[], ach:[] };
+    ST = { xp:0, lv:1, lvxp:0, bs:0, c:0, s:0, m:0, bw:0, sb:0, dom:[], mod:[], ach:[], modAcc:{}, domAcc:{} };
     streak = 0;
     refreshHeader(); refreshHomeStats(); renderAch();
     showToast('Progress reset.', 'blue');
@@ -1583,6 +1808,30 @@ function initApp() {
 
   load();
   buildHome();
+
+  // Keyboard shortcuts: Enter / → = Next, ← = Back, 1-9 = pick that answer option.
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === 'ArrowRight' || e.key === 'Enter') {
+      const nb = document.getElementById('qa-next');
+      if (nb) { e.preventDefault(); nb.click(); }
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      const bb = document.getElementById('qa-back');
+      if (bb) { e.preventDefault(); bb.click(); }
+      return;
+    }
+    if (e.key >= '1' && e.key <= '9') {
+      const idx = parseInt(e.key, 10) - 1;
+      const btnT = document.getElementById('btn-t'), btnF = document.getElementById('btn-f');
+      if (btnT && !btnT.disabled && (idx === 0 || idx === 1)) { (idx === 0 ? btnT : btnF).click(); return; }
+      const live = document.querySelectorAll('.opt-btn:not(:disabled), .fib-btn:not(:disabled), .boss-opt:not(:disabled)');
+      const match = Array.from(live).find(b => parseInt(b.getAttribute('data-i'), 10) === idx);
+      if (match) match.click();
+    }
+  });
   refreshHeader();
   refreshHomeStats();
 }
