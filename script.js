@@ -133,7 +133,7 @@ const CARDS = [
 {d:2,m:1,t:'SD-WAN',df:'Software-Defined Wide Area Network — centralizes WAN management with intelligent routing.',ex:'Automatically routes branch traffic over best available link: MPLS, internet, or LTE.'},
 {d:2,m:1,t:'SASE',df:'Secure Access Service Edge — cloud-delivered networking and security as one service.',ex:'Combines SD-WAN, SWG, CASB, ZTNA, and FWaaS. Security follows users anywhere.'},
 {d:2,m:1,t:'Jump Server',df:'Hardened bastion host used as a single access point to reach systems in a secure zone.',ex:'Admins SSH to jump server first, then SSH from there to internal servers.'},
-{d:2,m:1,t:'Air Gap',df:'Physical isolation — system has no network connection whatsoever.',ex:'Nuclear control systems and classified networks. Cannot be hacked remotely.'},
+{d:2,m:1,t:'Air Gap',df:'Physical isolation — system has no network connection whatsoever.',ex:'Nuclear control systems and classified networks. Immune to remote network attacks — physical access, removable media, or supply-chain compromise (see Stuxnet) can still reach it.'},
 {d:3,m:2,t:'SIEM',df:'Aggregates and correlates logs across the environment for real-time threat detection.',ex:'Correlates failed login plus new admin account plus large download into one high-priority alert.'},
 {d:3,m:2,t:'SOAR',df:'Automates incident response workflows reducing manual effort and response time.',ex:'Automatically isolates host, creates ticket, and pages SOC when ransomware is detected.'},
 {d:3,m:6,t:'EDR',df:'Endpoint Detection and Response — monitors endpoints, detects threats, enables remote response.',ex:'Detects malware on a laptop, captures process tree, allows remote isolation.'},
@@ -416,7 +416,7 @@ const NOTES = [
 {h:'Fundamentals & Change Management',rows:[['Zero Trust','Continuous verification of every user, device, and connection. No implicit trust anywhere.'],['Least Privilege','Users get only the minimum access their job requires.'],['Defense in Depth','Multiple overlapping layers — one failure does not expose everything.'],['AAA','Authentication (verify identity) + Authorization (grant access) + Accounting (log activity).'],['Change Management','Formal request/review/approve/document process. Even emergency patches need a rollback plan.']]}
 ]},
 {tab:'🌐 Networking', title:'Module 2: Networking', sects:[
-{h:'Network Zones & Segmentation',rows:[['DMZ','Buffer zone hosting public-facing servers. Isolated from internal network by firewalls.'],['Network Segmentation','Dividing a network into zones — limits lateral movement, contains breaches.'],['Micro-Segmentation','Workload-level segmentation — each service only talks to what it explicitly needs.'],['VLAN','Logical segmentation via switch configuration. Inter-VLAN traffic must go through firewall.'],['NAC','Checks device health (patches, AV) before granting network access.'],['Jump Server','Hardened bastion host. Single access point to secure internal systems.'],['Air Gap','Complete physical isolation. Zero network connectivity. Cannot be hacked remotely.']]},
+{h:'Network Zones & Segmentation',rows:[['DMZ','Buffer zone hosting public-facing servers. Isolated from internal network by firewalls.'],['Network Segmentation','Dividing a network into zones — limits lateral movement, contains breaches.'],['Micro-Segmentation','Workload-level segmentation — each service only talks to what it explicitly needs.'],['VLAN','Logical segmentation via switch configuration. Inter-VLAN traffic must go through firewall.'],['NAC','Checks device health (patches, AV) before granting network access.'],['Jump Server','Hardened bastion host. Single access point to secure internal systems.'],['Air Gap','Complete physical isolation. Zero network connectivity. Immune to remote network attacks — not to physical access or removable media (see Stuxnet).']]},
 {h:'Secure Network Design',rows:[['VPN','Encrypted tunnel over the public internet — protects data in transit.'],['TLS','Encrypted, authenticated communication. HTTPS = HTTP + TLS.'],['IPSec','Encrypts/authenticates IP packets at Layer 3. Used in site-to-site VPNs.'],['WPA3','Current Wi-Fi standard. SAE replaces WPA2 PSK handshake, resisting offline attacks.'],['Proxy Server','Intermediary that filters, caches, and logs web traffic.'],['Load Balancer','Distributes traffic across servers for availability and performance.'],['SD-WAN','Centralizes WAN management, intelligently routes branch traffic.'],['SASE','Cloud-delivered networking + security as one service (SD-WAN + SWG + CASB + ZTNA).']]},
 {h:'Port Numbers — Must Know for Exam',rows:[['22','SSH and SFTP — secure remote access and file transfer'],['23','Telnet — INSECURE, always replace with SSH'],['25','SMTP — email sending between servers'],['53','DNS — domain name resolution'],['80','HTTP — unencrypted web traffic'],['110','POP3 — download email from server (plain)'],['143','IMAP — access email on server (plain)'],['389','LDAP — directory queries (plain, unencrypted)'],['443','HTTPS — encrypted web traffic (TLS)'],['445','SMB — Windows file sharing'],['587','SMTP Submission with STARTTLS'],['636','LDAPS — encrypted LDAP'],['993','IMAPS — encrypted IMAP'],['995','POP3S — encrypted POP3'],['1433','MSSQL — Microsoft SQL Server database'],['3306','MySQL — open-source database'],['3389','RDP — Windows remote desktop (frequent attack target)'],['161','SNMP — network device monitoring and management'],['8080','HTTP alternate or proxy port']]}
 ]},
@@ -611,6 +611,103 @@ const FIRST_PREP = [
 {q:"A CISO has defined resiliency requirements for a new data center architecture: critical fileshares must remain accessible during and after a natural disaster; five percent of hard disks can fail at any time without impacting data; and systems must shut down gracefully when battery levels are below 20%. Which of the following are required to BEST meet these objectives? (Choose three.)",o:["Load balancing","Geographic dispersal","Redundant power supplies","UPS"],a:1,dm:"Resilience & Recovery",e:"Surviving a natural disaster at one site requires geographic dispersal; tolerating disk failures without data loss requires RAID; and a graceful shutdown triggered by battery level requires a UPS with monitoring. (Note: this question originally allowed three correct selections — Geographic dispersal, RAID, and UPS — condensed here to a single-answer format.)"},
 ];
 
+// Maps the sub-topic label ('dm') used by FIRST_PREP / PBQ questions onto the 5 official
+// SY0-701 exam domains in DN, so Practice Exam / Exam Simulator / PBQ results can show a
+// per-domain breakdown. Approximate: several sub-topics touch more than one domain; each is
+// mapped to the domain the official SY0-701 exam objectives most directly associate it with.
+const DM_TO_DOMAIN = {
+  'General Security': 0, 'Cryptography': 0, 'Physical Security': 0,
+  'Threats & Malware': 1, 'Threat Actors': 1, 'Social Engineering': 1, 'Application Security': 1,
+  'Network Security': 2, 'Resilience & Recovery': 2, 'Cloud Security': 2, 'Security Architecture': 2,
+  'Security Operations': 3, 'Identity & Access': 3, 'Incident Response': 3,
+  'Governance & Risk': 4,
+};
+// This is a practice-only study target, NOT a converted CompTIA scaled score — see examResultSubtext().
+const PASS_BENCHMARK = 83;
+const EXAM_SIM_DURATION_SEC = 90 * 60;
+
+// ═══════════════════════════════════════
+// PERFORMANCE-BASED QUESTIONS (PBQ)
+// Each item has one or more "slots" (a <select> the user must fill in) embedded either in a
+// visual diagram/code block (via {{slotId}} placeholders) or as a plain labeled row. A PBQ only
+// counts as correct if every slot is correct — same all-or-nothing grading as the real exam.
+// ═══════════════════════════════════════
+const PBQS = [
+{
+  id:'pbq-netzone', dm:'Network Security',
+  title:'Network Security Zone Design',
+  scenario:'A security architect is segmenting the network for a company that hosts a public web/mail server pair and a separate internal finance network. Select the correct control for each position in the data flow below.',
+  diagram:
+    '<div class="pbq-flow">' +
+      '<div class="pbq-node">🌐 Internet</div>' +
+      '<div class="pbq-arrow">↓</div>' +
+      '<div class="pbq-node pbq-node-slot"><div class="pbq-node-label">Position 1</div>{{pos1}}</div>' +
+      '<div class="pbq-arrow">↓</div>' +
+      '<div class="pbq-node">DMZ — Web &amp; Mail Servers</div>' +
+      '<div class="pbq-arrow">↓</div>' +
+      '<div class="pbq-node pbq-node-slot"><div class="pbq-node-label">Position 2</div>{{pos2}}</div>' +
+      '<div class="pbq-arrow">↓</div>' +
+      '<div class="pbq-node">🏢 Internal Network — Finance, HR</div>' +
+    '</div>',
+  slots:[
+    { id:'pos1', label:'Internet ↔ DMZ boundary', options:['Firewall','IDS','IPS','WAF','VPN Concentrator','NAC','SIEM'], correct:0 },
+    { id:'pos2', label:'DMZ ↔ Internal boundary', options:['Firewall','IDS','IPS','WAF','VPN Concentrator','NAC','SIEM'], correct:2 },
+  ],
+  explanation:'Position 1 is the perimeter boundary between the untrusted internet and the semi-trusted DMZ — a firewall is the baseline control that enforces which ports and protocols may reach the public-facing servers at all. Position 2 sits between the DMZ and the trusted internal network, the boundary that matters most if a DMZ server is ever compromised — an inline IPS actively blocks known exploit traffic there instead of only alerting like an IDS would.',
+},
+{
+  id:'pbq-acl', dm:'Network Security',
+  title:'Firewall ACL Completion',
+  scenario:'The web server at 10.0.2.10 must be reachable over HTTPS from the internet. Every other type of inbound connection to it must be blocked. Complete the two-line ACL.',
+  diagram:
+    '<div class="pbq-acl">' +
+      '<div class="pbq-acl-line">access-list WEB-IN permit tcp any host 10.0.2.10 eq {{port}}</div>' +
+      '<div class="pbq-acl-line">access-list WEB-IN {{finalAction}} ip any any</div>' +
+    '</div>',
+  slots:[
+    { id:'port', label:'Port for the permit rule', options:['21','22','80','443'], correct:3 },
+    { id:'finalAction', label:'Action for the final rule', options:['permit','deny'], correct:1 },
+  ],
+  explanation:'HTTPS runs on TCP/443, so that\'s the only port the first rule should permit. Many platforms deny non-matching traffic by default, but writing an explicit "deny ip any any" as the final rule is still standard practice — it documents the intent clearly and gives you a rule to attach logging to, rather than relying on an implicit behavior someone might not expect.',
+},
+{
+  id:'pbq-ir-order', dm:'Incident Response',
+  title:'Incident Response Phase Ordering',
+  scenario:'Assign each incident response phase its correct position in the sequence (1 = first, 7 = last).',
+  slots:[
+    { id:'containment', label:'Containment', options:['1','2','3','4','5','6','7'], correct:3 },
+    { id:'lessons', label:'Lessons Learned', options:['1','2','3','4','5','6','7'], correct:6 },
+    { id:'prep', label:'Preparation', options:['1','2','3','4','5','6','7'], correct:0 },
+    { id:'recovery', label:'Recovery', options:['1','2','3','4','5','6','7'], correct:5 },
+    { id:'detection', label:'Detection', options:['1','2','3','4','5','6','7'], correct:1 },
+    { id:'eradication', label:'Eradication', options:['1','2','3','4','5','6','7'], correct:4 },
+    { id:'analysis', label:'Analysis', options:['1','2','3','4','5','6','7'], correct:2 },
+  ],
+  explanation:'The full sequence is Preparation → Detection → Analysis → Containment → Eradication → Recovery → Lessons Learned. You prepare before an incident happens, detect and analyze it to understand scope, contain it to stop the spread, eradicate the root cause, recover systems to normal operation, then document lessons learned so the next incident goes better.',
+},
+{
+  id:'pbq-log-triage', dm:'Security Operations',
+  title:'SIEM Alert Triage',
+  scenario:'A SIEM alert fires for a single user account. Review the log excerpt and decide how to respond.',
+  context:'02:58:11  auth-fail  user=jsmith  src=41.20.118.6  reason=bad_password\n02:58:13  auth-fail  user=jsmith  src=41.20.118.6  reason=bad_password\n02:58:16  auth-fail  user=jsmith  src=41.20.118.6  reason=bad_password\n02:58:22  auth-success user=jsmith  src=41.20.118.6  geo=unrecognized_country\n02:59:05  vpn-connect  user=jsmith  src=41.20.118.6',
+  slots:[
+    { id:'pattern', label:'What does this pattern MOST likely indicate?', options:['Normal user working behind a VPN','Brute-force/credential attack followed by a successful compromise','A misconfigured load balancer health check','A scheduled backup job'], correct:1 },
+    { id:'action', label:'What should the analyst do FIRST?', options:['Delete the user account entirely','Disable/lock the account and force a password reset','Ignore it — the login eventually succeeded','Uninstall endpoint antivirus to investigate'], correct:1 },
+  ],
+  explanation:'Repeated failed logins immediately followed by a success from an unrecognized location is a strong indicator the account was just compromised via a brute-force or credential attack. The correct first move is containment on the account itself — lock it and force a password reset — before deeper investigation, so the attacker loses access as quickly as possible.',
+},
+{
+  id:'pbq-dr-sizing', dm:'Resilience & Recovery',
+  title:'Backup & Recovery Sizing',
+  scenario:'A finance database has an RPO of 1 hour and an RTO of 4 hours. Choose the backup frequency and site type that satisfy both requirements without over-spending on infrastructure the requirements don\'t call for.',
+  slots:[
+    { id:'freq', label:'Backup frequency needed to meet the RPO', options:['Once per day','Once per hour','Once per week','No backups — replication only'], correct:1 },
+    { id:'site', label:'Most cost-appropriate site type for the RTO', options:['Cold site','Warm site','Hot site','No DR site needed'], correct:1 },
+  ],
+  explanation:'RPO measures the maximum acceptable data loss window, so a 1-hour RPO requires backups running at least every hour. A 4-hour RTO is comfortably met by a warm site — partially configured and ready to bring online within hours — without paying for a hot site\'s real-time replication, which is really meant for RTOs measured in minutes.',
+},
+];
+
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
@@ -630,6 +727,10 @@ let notesI = 0;
 let fpPool = [], fpI = 0, fpC = 0, fpAns = [];
 let drillPool = [], drillI = 0, drillC = 0, drillAns = [], drillOpts = [], drillMod = 0;
 const FIRST_PREP_EXAM_LENGTH = 90;
+// Exam Simulator — strict, timed, no-feedback-until-submit mock exam.
+let esPool = [], esI = 0, esAns = [], esTimeLeft = 0, esTimerId = null, esReviewing = false;
+// PBQ Practice
+let pbqPool = [], pbqI = 0, pbqC = 0, pbqAns = [];
 
 // ─── PERSIST ───
 // Storage is fully optional and never allowed to crash the app.
@@ -736,7 +837,7 @@ const ACHS = [
 ['aboss','👹 Boss Slayer'],['aacr','🔤 Acronym Master'],
 ['atf','✅ T/F Champion'],['aall9','🌟 All Modules'],
 ['asurv','❤️ Survived 10+ in Survival'],['aport','🔌 Port Master'],
-['afprep','🎓 First Preparation Passed'],
+['afprep','🎓 Mock Exam Passed'],
 ];
 function checkAch() {
   const earn = (id, lbl) => {
@@ -766,6 +867,7 @@ function renderAch() {
 // ─── NAVIGATION ───
 function showHome() {
   clearInterval(spTimer);
+  clearExamTimer();
   const hs = document.getElementById('home-screen');
   const gs = document.getElementById('game-screen');
   if (hs) hs.style.display = 'block';
@@ -781,7 +883,7 @@ function showGame(title) {
   if (gt) gt.textContent = title;
   streak = 0;
   const sp = document.getElementById('streak-pill');
-  if (sp) sp.textContent = '🔥 0';
+  if (sp) { sp.textContent = '🔥 0'; sp.style.display = ''; }
   ST.s++; save();
 }
 function setProg(cur, tot) {
@@ -842,7 +944,9 @@ function buildHome() {
     { id:'surv',  ic:'❤️', t:'Survival Mode',     d:'3 lives. Answer until you run out. Beat your score.', b:'NEW', cls:'badge-new' },
     { id:'ports', ic:'🔌', t:'Ports & Protocols', d:'Which service runs on that port? Heavily tested on SY0-701.', b:'NEW', cls:'badge-new' },
     { id:'notes', ic:'📚', t:'Study Notes',       d:'Full reference sheet for all 9 course modules. Read before testing.', b:'Ref', cls:'badge-info' },
-    { id:'firstprep', ic:'🎓', t:'First Preparation', d:'90-question full mock exam pulled from a 139-question bank, scenario-style.', b:'90 Q', cls:'badge-new' },
+    { id:'firstprep', ic:'📝', t:'Practice Exam', d:'90-question mock exam pulled from a 139-question bank. Feedback and explanation after every question — built for learning.', b:'90 Q', cls:'badge-info' },
+    { id:'examsim', ic:'🎓', t:'Exam Simulator', d:'Strict full simulation: 90 questions, 90-minute countdown, no feedback until you submit, mark-for-review, and a domain breakdown at the end.', b:'NEW', cls:'badge-new' },
+    { id:'pbq',   ic:'🧩', t:'PBQ Practice',   d:'Performance-based scenarios — place network appliances, complete an ACL, order IR phases. Tests applying knowledge, not just recall.', b:'NEW', cls:'badge-new' },
   ];
   const mg = document.getElementById('mode-grid');
   if (!mg) throw new Error('mode-grid element not found in DOM — check index.html structure');
@@ -891,6 +995,8 @@ function startMode(m) {
   else if (m === 'ports')  startPorts();
   else if (m === 'notes')  startNotes();
   else if (m === 'firstprep') startFirstPrep();
+  else if (m === 'examsim') startExamSim();
+  else if (m === 'pbq') startPBQ();
 }
 function startDomainFlash(d) {
   if (!ST.mod.includes(d)) { ST.mod.push(d); save(); }
@@ -1014,7 +1120,7 @@ function showWeakAreas() {
       '</div>'
     ).join('') +
     '</div>' +
-    '<div style="font-size:13px;font-weight:700;margin-bottom:.5rem">🎯 Domain Readiness <span style="font-weight:400;color:#6b7299">(from Boss Quiz + Domain Exam)</span></div>' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:.5rem">🎯 Domain Readiness <span style="font-weight:400;color:#6b7299">(from Boss Quiz, Domain Exam, Practice Exam, Exam Simulator &amp; PBQ)</span></div>' +
     '<div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.1rem">' +
     domRows.map(r =>
       '<div class="mode-card" style="padding:.65rem .85rem">' +
@@ -1043,6 +1149,78 @@ function makeResPanel(xpEarned, pct, title, sub, btns) {
     '<div class="res-ring ' + cls + '">' + pct + '%</div>' +
     '<h3>' + title + '</h3><p>' + sub + '</p>' +
     '<div class="res-btns">' + btns + '</div></div>';
+}
+function fmtMinSec(totalSec) {
+  const sec = Math.max(0, Math.round(totalSec));
+  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+}
+// Careful, non-overclaiming pass messaging shared by Practice Exam and Exam Simulator.
+// The real CompTIA Security+ score is a scaled 100–900 value (passing = 750) computed from a
+// weighted item bank, NOT a simple percent-correct — so this benchmark is a study target only.
+function examResultSubtext(pct, passed) {
+  return 'Practice benchmark: ' + PASS_BENCHMARK + '%. CompTIA scores the real exam on a scaled 100–900 range (passing = 750) using weighted, calibrated questions — that is not the same as "' +
+    PASS_BENCHMARK + '% of questions right" here, so treat this as a rough study target, not a predicted real score. ' +
+    (passed
+      ? '🎉 You cleared the practice benchmark — a good sign. Check the domain breakdown below for anything still worth another pass.'
+      : pct >= 70
+        ? 'Close. Review your weakest domain below, then try another run.'
+        : 'Below the practice benchmark. Focus on the domain breakdown below, drill those modules, then retry.');
+}
+// Per-domain accuracy for one completed exam run, using each question's dm sub-topic mapped
+// through DM_TO_DOMAIN onto the 5 official SY0-701 domains. ansArr entries need a .ch field.
+function domainBreakdownHtml(pool, ansArr) {
+  const acc = {};
+  pool.forEach((q, i) => {
+    const dom = DM_TO_DOMAIN[q.dm];
+    if (dom === undefined) return;
+    if (!acc[dom]) acc[dom] = { c: 0, t: 0 };
+    acc[dom].t++;
+    const a = ansArr[i];
+    if (a && a.ch === q.a) acc[dom].c++;
+  });
+  const barColor = (pct) => pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+  const rows = DN.map((name, i) => {
+    const a = acc[i];
+    if (!a || a.t === 0) return null;
+    const pct = Math.round(a.c / a.t * 100);
+    return '<div style="margin-bottom:.55rem">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">' +
+      '<span style="font-weight:600">Domain ' + (i + 1) + '.0: ' + name + '</span>' +
+      '<span style="color:' + barColor(pct) + ';font-weight:700">' + a.c + '/' + a.t + ' · ' + pct + '%</span></div>' +
+      '<div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">' +
+      '<div style="height:100%;width:' + pct + '%;background:' + barColor(pct) + '"></div></div></div>';
+  }).filter(Boolean);
+  if (!rows.length) return '';
+  const weak = DN.filter((name, i) => acc[i] && acc[i].t > 0 && Math.round(acc[i].c / acc[i].t * 100) < 70);
+  return '<div class="card" style="margin-top:.9rem;text-align:left">' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:.7rem">🎯 Domain Breakdown</div>' +
+    rows.join('') +
+    (weak.length
+      ? '<div style="margin-top:.7rem;font-size:12px;color:#ef4444"><strong>🔴 Weakest:</strong> ' + weak.join(' · ') + '</div>'
+      : '<div style="margin-top:.7rem;font-size:12px;color:#22c55e">No domain fell below 70% on this run — solid, even coverage.</div>') +
+    '</div>';
+}
+// List every missed question from a completed run with the user's answer, the correct answer,
+// and the explanation — a consolidated post-exam study list.
+function missedReviewHtml(missed, pool, ansArr) {
+  if (!missed.length) {
+    return '<div class="card" style="margin-top:.9rem;text-align:center;color:#22c55e;font-size:13px;font-weight:600">🎉 Perfect run — no incorrect answers to review!</div>';
+  }
+  const rows = missed.map(q => {
+    const i = pool.indexOf(q);
+    const a = ansArr[i];
+    const yourAns = (a && a.ch !== null && a.ch !== undefined) ? q.o[a.ch] : '(no answer selected)';
+    return '<div class="review-item">' +
+      '<div class="review-q">Q' + (i + 1) + '. ' + q.q + '</div>' +
+      '<div class="review-row your">Your answer: ' + yourAns + '</div>' +
+      '<div class="review-row correct">Correct: ' + q.o[q.a] + '</div>' +
+      '<div class="review-why">' + (q.e || '') + '</div>' +
+      (q.dm ? '<div class="review-topic">' + q.dm + '</div>' : '') +
+      '</div>';
+  }).join('');
+  return '<div class="card" style="margin-top:.9rem;text-align:left">' +
+    '<div style="font-size:13px;font-weight:700;margin-bottom:.3rem">🔍 Review Incorrect Answers (' + missed.length + ')</div>' +
+    rows + '</div>';
 }
 
 // ─── FLASHCARDS ───
@@ -1577,11 +1755,11 @@ function endDex() {
   if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startDex(dDom, missed));
 }
 
-// ─── FIRST PREPARATION (90-question full mock exam) ───
+// ─── PRACTICE EXAM (90-question mock exam, feedback after every question) ───
 function startFirstPrep(customPool) {
   fpPool = customPool || shuf([...FIRST_PREP]).slice(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
   fpI = 0; fpC = 0; fpAns = [];
-  showGame('🎓 First Preparation');
+  showGame('📝 Practice Exam');
   setProg(0, fpPool.length);
   renderFirstPrep();
 }
@@ -1612,24 +1790,267 @@ function pickFirstPrep(ch) {
   const q = fpPool[fpI]; const ok = ch === q.a;
   if (ok) { fpC++; addXP(15); }
   bumpStreak(ok);
+  const dom = DM_TO_DOMAIN[q.dm];
+  if (dom !== undefined) bumpDomAcc(dom, ok);
   fpAns[fpI] = { ch, ok };
   renderFirstPrep();
 }
 function endFirstPrep() {
   const pct = Math.round((fpC / fpPool.length) * 100);
-  const passed = pct >= 83;
+  const passed = pct >= PASS_BENCHMARK;
   const missed = fpPool.filter((q, i) => fpAns[i] && !fpAns[i].ok);
-  if (passed && !ST.ach.includes('afprep')) { ST.ach.push('afprep'); showToast('🏆 First Preparation Passed!', 'blue'); renderAch(); save(); }
+  if (passed && !ST.ach.includes('afprep')) { ST.ach.push('afprep'); showToast('🏆 Mock Exam Passed!', 'blue'); renderAch(); }
+  save();
   setBody(makeResPanel(fpC * 15, pct, fpC + ' / ' + fpPool.length + ' correct',
-    'CompTIA Security+ passes at roughly 750/900 (~83%). ' +
-    (passed ? '🎉 That would be a PASS on the real exam — excellent work!' : pct >= 70 ? 'Close — a bit more review and you\'ll clear the passing bar.' : 'Below passing level. Hit the flashcards and domain exams, then try again.'),
+    examResultSubtext(pct, passed),
     '<button class="btn-res primary" id="btn-rep">New 90-Question Run</button>' +
     (missed.length > 0 ? '<button class="btn-res secondary" id="btn-miss">Redo Missed (' + missed.length + ')</button>' : '') +
+    '<button class="btn-res secondary" id="btn-es">Try Exam Simulator</button>' +
     '<button class="btn-res secondary" id="btn-hm">Home</button>'
-  ));
+  ) + domainBreakdownHtml(fpPool, fpAns) + missedReviewHtml(missed, fpPool, fpAns));
   document.getElementById('btn-rep').addEventListener('click', () => startFirstPrep());
+  document.getElementById('btn-es').addEventListener('click', () => startExamSim());
   document.getElementById('btn-hm').addEventListener('click', showHome);
   if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startFirstPrep(missed));
+}
+
+// ─── EXAM SIMULATOR (strict: 90-minute countdown, no feedback until submit, mark-for-review) ───
+function clearExamTimer() { clearInterval(esTimerId); esTimerId = null; }
+function examTimerBarHtml() {
+  const warn = esTimeLeft <= 300; // last 5 minutes
+  return '<div class="exam-timer' + (warn ? ' warn' : '') + '" id="exam-timer">⏱ ' + fmtMinSec(esTimeLeft) + ' remaining</div>';
+}
+function updateExamTimerDisplay() {
+  const el = document.getElementById('exam-timer');
+  if (!el) return;
+  el.textContent = '⏱ ' + fmtMinSec(esTimeLeft) + ' remaining';
+  el.classList.toggle('warn', esTimeLeft <= 300);
+}
+function examOptBtnHtml(i, text, chosenIdx) {
+  return '<button class="opt-btn' + (chosenIdx === i ? ' selected' : '') + '" data-i="' + i + '">' + text + '</button>';
+}
+function startExamSim() {
+  clearExamTimer();
+  esPool = shuf([...FIRST_PREP]).slice(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
+  esI = 0; esReviewing = false;
+  esAns = esPool.map(() => ({ ch: null, marked: false }));
+  esTimeLeft = EXAM_SIM_DURATION_SEC;
+  showGame('🎓 Exam Simulator');
+  const sp = document.getElementById('streak-pill');
+  if (sp) sp.style.display = 'none'; // no streak feedback during a strict simulated exam
+  setProg(0, esPool.length);
+  esTimerId = setInterval(() => {
+    esTimeLeft--;
+    updateExamTimerDisplay();
+    if (esTimeLeft <= 0) {
+      clearExamTimer();
+      showToast('⏰ Time is up — auto-submitting your exam.', 'red');
+      endExamSim();
+    }
+  }, 1000);
+  renderExamSim();
+}
+function renderExamSim() {
+  if (esReviewing) { showExamReview(); return; }
+  if (esI >= esPool.length) { showExamReview(); return; }
+  setProg(esI, esPool.length);
+  const q = esPool[esI];
+  const st = esAns[esI];
+  const unanswered = esAns.filter(a => a.ch === null).length;
+  setBody(
+    examTimerBarHtml() +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:6px">' +
+      '<div style="font-size:10px;color:#6b7299">Question ' + (esI+1) + ' of ' + esPool.length + (q.dm ? ' · ' + q.dm : '') + '</div>' +
+      '<div style="font-size:10px;color:#6b7299">' + unanswered + ' unanswered</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="q-text">' + q.q + '</div>' +
+      '<div class="opts-grid" id="es-opts">' +
+        q.o.map((o, i) => examOptBtnHtml(i, o, st.ch)).join('') +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:.5rem;justify-content:center;margin:.7rem 0">' +
+      '<button class="mark-btn' + (st.marked ? ' active' : '') + '" id="es-mark">' + (st.marked ? '🚩 Marked for Review' : '🏳️ Mark for Review') + '</button>' +
+    '</div>' +
+    '<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">' +
+      (esI > 0 ? '<button class="btn-res secondary" id="es-back">← Back</button>' : '') +
+      '<button class="btn-res secondary" id="es-nav">Question Navigator</button>' +
+      '<button class="btn-res primary" id="es-next">' + (esI === esPool.length - 1 ? 'Review & Submit' : 'Next →') + '</button>' +
+    '</div>'
+  );
+  document.getElementById('es-opts').querySelectorAll('.opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => { st.ch = parseInt(btn.getAttribute('data-i')); renderExamSim(); });
+  });
+  document.getElementById('es-mark').addEventListener('click', () => { st.marked = !st.marked; renderExamSim(); });
+  const back = document.getElementById('es-back');
+  if (back) back.addEventListener('click', () => { esI--; renderExamSim(); });
+  document.getElementById('es-nav').addEventListener('click', () => { esReviewing = true; renderExamSim(); });
+  document.getElementById('es-next').addEventListener('click', () => {
+    if (esI === esPool.length - 1) { esReviewing = true; renderExamSim(); }
+    else { esI++; renderExamSim(); }
+  });
+}
+function showExamReview() {
+  const answered = esAns.filter(a => a.ch !== null).length;
+  const unanswered = esPool.length - answered;
+  const marked = esAns.filter(a => a.marked).length;
+  setBody(
+    examTimerBarHtml() +
+    '<div class="card" style="text-align:center">' +
+      '<div style="font-size:14px;font-weight:700;margin-bottom:.4rem">📝 Review Before Submitting</div>' +
+      '<div style="font-size:12px;color:#6b7299;margin-bottom:.9rem">' + answered + ' / ' + esPool.length + ' answered · ' + unanswered + ' unanswered · ' + marked + ' marked for review</div>' +
+      '<div class="qnav-grid" id="qnav-grid">' +
+        esPool.map((q, i) => {
+          const a = esAns[i];
+          const cls = a.marked ? 'marked' : (a.ch !== null ? 'answered' : 'unanswered');
+          return '<button class="qnav-btn ' + cls + '" data-i="' + i + '">' + (i+1) + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div style="margin-top:.85rem;font-size:10px;color:#6b7299">' +
+        '<span class="qnav-dot answered"></span>Answered &nbsp; <span class="qnav-dot unanswered"></span>Unanswered &nbsp; <span class="qnav-dot marked"></span>Marked' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.8rem">' +
+      '<button class="btn-res secondary" id="es-resume">Return to Exam</button>' +
+      '<button class="btn-res primary" id="es-submit">Submit Final Answers' + (unanswered > 0 ? ' (' + unanswered + ' unanswered)' : '') + '</button>' +
+    '</div>'
+  );
+  document.getElementById('es-resume').addEventListener('click', () => {
+    esReviewing = false;
+    if (esI >= esPool.length) esI = esPool.length - 1;
+    renderExamSim();
+  });
+  document.getElementById('es-submit').addEventListener('click', () => {
+    if (unanswered > 0 && !confirm(unanswered + ' question(s) are still unanswered. Submit anyway?')) return;
+    endExamSim();
+  });
+  document.querySelectorAll('#qnav-grid .qnav-btn').forEach(btn => {
+    btn.addEventListener('click', () => { esI = parseInt(btn.getAttribute('data-i')); esReviewing = false; renderExamSim(); });
+  });
+}
+function endExamSim() {
+  clearExamTimer();
+  const timeUsedSec = EXAM_SIM_DURATION_SEC - Math.max(0, esTimeLeft);
+  let correctCount = 0;
+  esPool.forEach((q, i) => {
+    const ok = esAns[i].ch === q.a;
+    if (ok) correctCount++;
+    const dom = DM_TO_DOMAIN[q.dm];
+    if (dom !== undefined) bumpDomAcc(dom, ok);
+  });
+  const pct = Math.round((correctCount / esPool.length) * 100);
+  const passed = pct >= PASS_BENCHMARK;
+  const missed = esPool.filter((q, i) => esAns[i].ch !== q.a);
+  const markedCount = esAns.filter(a => a.marked).length;
+  const answeredCount = esAns.filter(a => a.ch !== null).length;
+  const xpEarned = correctCount * 15;
+
+  if (passed && !ST.ach.includes('afprep')) { ST.ach.push('afprep'); showToast('🏆 Mock Exam Passed!', 'blue'); }
+  ST.xp += xpEarned; ST.lvxp += xpEarned; ST.c += correctCount;
+  const need = ST.lv * 120;
+  if (ST.lvxp >= need) { ST.lvxp -= need; ST.lv++; }
+  checkAch();
+  save();
+  refreshHeader(); refreshHomeStats();
+
+  setBody(
+    makeResPanel(xpEarned, pct, correctCount + ' / ' + esPool.length + ' correct', examResultSubtext(pct, passed),
+      '<button class="btn-res primary" id="btn-newsim">New 90-Min Simulation</button>' +
+      (missed.length > 0 ? '<button class="btn-res secondary" id="btn-redo">Practice Missed (' + missed.length + ')</button>' : '') +
+      '<button class="btn-res secondary" id="btn-hm">Home</button>'
+    ) +
+    '<div class="card" style="margin-top:.9rem;text-align:center;font-size:12px;color:#6b7299">' +
+      '⏱ Time used: ' + fmtMinSec(timeUsedSec) + ' of 90:00 &nbsp;·&nbsp; Answered: ' + answeredCount + '/' + esPool.length + ' &nbsp;·&nbsp; Marked for review: ' + markedCount +
+    '</div>' +
+    domainBreakdownHtml(esPool, esAns) +
+    missedReviewHtml(missed, esPool, esAns)
+  );
+  document.getElementById('btn-newsim').addEventListener('click', () => startExamSim());
+  document.getElementById('btn-hm').addEventListener('click', showHome);
+  if (missed.length > 0) document.getElementById('btn-redo').addEventListener('click', () => startFirstPrep(missed));
+}
+
+// ─── PBQ PRACTICE (performance-based, scenario-application questions) ───
+function pbqSlotSelectHtml(slot, state) {
+  const chosen = state.selections[slot.id];
+  let cls = 'pbq-select';
+  if (state.checked) cls += (chosen === slot.correct ? ' pbq-correct' : ' pbq-wrong');
+  return '<select class="' + cls + '" data-slot="' + slot.id + '"' + (state.checked ? ' disabled' : '') + '>' +
+    '<option value=""' + (chosen === undefined ? ' selected' : '') + ' disabled>Select…</option>' +
+    slot.options.map((o, i) => '<option value="' + i + '"' + (chosen === i ? ' selected' : '') + '>' + o + '</option>').join('') +
+    '</select>';
+}
+function startPBQ(customPool) {
+  pbqPool = customPool || shuf([...PBQS]);
+  pbqI = 0; pbqC = 0; pbqAns = [];
+  showGame('🧩 PBQ Practice');
+  setProg(0, pbqPool.length);
+  renderPBQ();
+}
+function renderPBQ() {
+  if (pbqI >= pbqPool.length) { endPBQ(); return; }
+  setProg(pbqI, pbqPool.length);
+  const q = pbqPool[pbqI];
+  if (!pbqAns[pbqI]) pbqAns[pbqI] = { selections: {}, checked: false, allCorrect: false };
+  const state = pbqAns[pbqI];
+
+  let interactiveHtml;
+  if (q.diagram) {
+    let filled = q.diagram;
+    q.slots.forEach(slot => { filled = filled.split('{{' + slot.id + '}}').join(pbqSlotSelectHtml(slot, state)); });
+    interactiveHtml = filled;
+  } else {
+    interactiveHtml = '<div class="pbq-slots">' + q.slots.map(slot =>
+      '<div class="pbq-slot-row"><div class="pbq-slot-label">' + slot.label + '</div>' + pbqSlotSelectHtml(slot, state) + '</div>'
+    ).join('') + '</div>';
+  }
+  const allFilled = q.slots.every(slot => state.selections[slot.id] !== undefined);
+
+  setBody(
+    '<div style="font-size:10px;color:#6b7299;margin-bottom:.45rem">PBQ ' + (pbqI+1) + ' of ' + pbqPool.length + (q.dm ? ' · ' + q.dm : '') + '</div>' +
+    '<div class="card">' +
+      '<div class="q-text">' + q.title + '</div>' +
+      '<div style="font-size:12.5px;color:#6b7299;line-height:1.55;margin-bottom:.3rem">' + q.scenario + '</div>' +
+      (q.context ? '<div class="pbq-context">' + q.context + '</div>' : '') +
+      interactiveHtml +
+      (state.checked
+        ? '<div class="exp-box show' + (state.allCorrect ? '' : ' wrong') + '">' + (state.allCorrect ? '✓ All correct. ' : '✗ One or more selections were incorrect (see highlighted fields). ') + q.explanation + '</div>'
+        : '<div style="text-align:center;margin-top:1rem"><button class="btn-res primary" id="pbq-check"' + (allFilled ? '' : ' disabled') + '>Check Answer</button></div>'
+      ) +
+    '</div>' +
+    navRowHtml(pbqI > 0, state.checked, pbqI === pbqPool.length - 1)
+  );
+  document.querySelectorAll('.pbq-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      state.selections[sel.getAttribute('data-slot')] = parseInt(sel.value, 10);
+      renderPBQ();
+    });
+  });
+  const checkBtn = document.getElementById('pbq-check');
+  if (checkBtn) checkBtn.addEventListener('click', () => pickPBQ());
+  wireNav(() => { pbqI--; renderPBQ(); }, () => { pbqI++; renderPBQ(); });
+}
+function pickPBQ() {
+  const q = pbqPool[pbqI];
+  const state = pbqAns[pbqI];
+  state.checked = true;
+  state.allCorrect = q.slots.every(slot => state.selections[slot.id] === slot.correct);
+  if (state.allCorrect) { pbqC++; addXP(20); }
+  bumpStreak(state.allCorrect);
+  const dom = DM_TO_DOMAIN[q.dm];
+  if (dom !== undefined) bumpDomAcc(dom, state.allCorrect);
+  renderPBQ();
+}
+function endPBQ() {
+  const pct = Math.round((pbqC / pbqPool.length) * 100);
+  setBody(makeResPanel(pbqC * 20, pct, pbqC + ' / ' + pbqPool.length + ' scenarios fully correct',
+    'Performance-based questions only count as correct if every field is right — same all-or-nothing grading as the real exam. ' +
+    (pct >= 80 ? 'Excellent applied knowledge!' : pct >= 50 ? 'Solid start — review the ones you missed.' : 'These are meant to be hard. Review the explanations, then try again.'),
+    '<button class="btn-res primary" id="btn-rep">New PBQ Set</button>' +
+    '<button class="btn-res secondary" id="btn-hm">Home</button>'
+  ));
+  document.getElementById('btn-rep').addEventListener('click', () => startPBQ());
+  document.getElementById('btn-hm').addEventListener('click', showHome);
 }
 
 // ─── SURVIVAL MODE ───
