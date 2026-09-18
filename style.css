@@ -300,3 +300,51 @@ body {
   .domain-grid { grid-template-columns: repeat(2,1fr); }
 }
 .azopts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
+
+/* ── EXAM SIMULATOR ── */
+.opt-btn.selected { border-color: #5b7fff !important; background: rgba(91,127,255,.1) !important; }
+.exam-timer { display: inline-block; background: rgba(63,217,200,.1); border: 1px solid rgba(63,217,200,.3); color: #3fd9c8; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; margin-bottom: 0.75rem; }
+.exam-timer.warn { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color: #ef4444; animation: examPulse 1s infinite; }
+@keyframes examPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+.mark-btn { background: transparent; border: 1px solid #1e2240; color: #6b7299; font-size: 11px; font-weight: 700; padding: 0.4rem 0.9rem; border-radius: 7px; cursor: pointer; font-family: inherit; }
+.mark-btn:hover { border-color: #f5a623; color: #f5a623; }
+.mark-btn.active { border-color: #f5a623; background: rgba(245,166,35,.1); color: #f5a623; }
+.qnav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px,1fr)); gap: 6px; margin-top: 0.5rem; }
+.qnav-btn { aspect-ratio: 1; border-radius: 6px; border: 1px solid #1e2240; background: #0a0c14; color: #6b7299; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.qnav-btn:hover { border-color: #5b7fff; }
+.qnav-btn.answered { border-color: #22c55e; background: rgba(34,197,94,.1); color: #22c55e; }
+.qnav-btn.unanswered { border-color: #ef4444; background: rgba(239,68,68,.07); color: #ef4444; }
+.qnav-btn.marked { border-color: #f5a623; background: rgba(245,166,35,.12); color: #f5a623; }
+.qnav-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.qnav-dot.answered { background: #22c55e; }
+.qnav-dot.unanswered { background: #ef4444; }
+.qnav-dot.marked { background: #f5a623; }
+/* ── MISSED-QUESTION REVIEW LIST (Practice Exam + Exam Simulator results) ── */
+.review-item { border-top: 1px solid #1e2240; padding: 0.75rem 0; }
+.review-item:first-child { border-top: none; padding-top: 0; }
+.review-q { font-size: 12.5px; font-weight: 600; margin-bottom: 0.4rem; line-height: 1.5; }
+.review-row { font-size: 11.5px; margin-bottom: 0.2rem; }
+.review-row.your { color: #ef4444; }
+.review-row.correct { color: #22c55e; }
+.review-why { font-size: 11.5px; color: #6b7299; line-height: 1.55; margin-top: 0.3rem; }
+.review-topic { font-size: 10px; color: #5b7fff; margin-top: 0.35rem; text-transform: uppercase; letter-spacing: .04em; }
+/* ── PBQ PRACTICE ── */
+.pbq-context { background: #0a0c14; border: 1px solid #1e2240; border-radius: 8px; padding: 0.75rem 0.9rem; font-family: monospace; font-size: 11px; color: #9aa0c0; line-height: 1.6; margin: 0.6rem 0; white-space: pre-wrap; overflow-x: auto; }
+.pbq-flow { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0.7rem 0; }
+.pbq-node { background: #0a0c14; border: 1px solid #1e2240; border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 12px; font-weight: 600; text-align: center; min-width: 220px; max-width: 100%; }
+.pbq-node-slot { border-color: #5b7fff; background: rgba(91,127,255,.06); padding: 0.5rem 0.7rem; }
+.pbq-node-label { font-size: 10px; color: #5b7fff; font-weight: 700; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: .04em; }
+.pbq-arrow { color: #6b7299; font-size: 14px; line-height: 1; }
+.pbq-acl { background: #0a0c14; border: 1px solid #1e2240; border-radius: 8px; padding: 0.85rem; margin: 0.6rem 0; overflow-x: auto; }
+.pbq-acl-line { font-family: monospace; font-size: 11.5px; color: #9aa0c0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 0.3rem 0; line-height: 1.8; }
+.pbq-slots { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.7rem; }
+.pbq-slot-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; background: #0a0c14; border: 1px solid #1e2240; border-radius: 8px; padding: 0.55rem 0.75rem; }
+.pbq-slot-label { font-size: 12px; font-weight: 600; flex: 1; min-width: 160px; }
+.pbq-select { background: #111420; border: 1px solid #1e2240; color: #e2e4f0; font-size: 12px; font-family: inherit; padding: 0.4rem 0.55rem; border-radius: 6px; cursor: pointer; min-width: 150px; }
+.pbq-select:disabled { cursor: default; opacity: .9; }
+.pbq-select.pbq-correct { border-color: #22c55e; background: rgba(34,197,94,.1); color: #22c55e; }
+.pbq-select.pbq-wrong { border-color: #ef4444; background: rgba(239,68,68,.1); color: #ef4444; }
+@media (max-width:520px) {
+  .qnav-grid { grid-template-columns: repeat(auto-fill, minmax(30px,1fr)); }
+  .pbq-node { min-width: 0; width: 100%; }
+}
