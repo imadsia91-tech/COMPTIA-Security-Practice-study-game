@@ -15,6 +15,9 @@ The application combines cybersecurity revision with game-based learning through
 * 🎯 **Match It** — interactive matching game
 * ⚔️ **Boss Quiz** — challenging question rounds
 * 🧪 **Domain Exams** based on the 5 Security+ exam domains
+* 📝 **Practice Exam** — 90-question mock exam with feedback after every question
+* 🎓 **Exam Simulator** — strict, timed (90-minute) mock exam with no feedback until submission, mark-for-review, a question navigator, and a full domain-breakdown report
+* 🧩 **PBQ Practice** — performance-based scenarios (network zone design, ACL completion, incident-response ordering, log triage, backup/recovery sizing) that test applying knowledge, not just recall
 * 🔥 **Survival Mode** — keep answering correctly to survive
 * ⚡ **Speed Round** for rapid revision
 * 🔌 **Ports & Protocols** practice
@@ -212,9 +215,9 @@ Possible future enhancements include:
 * [ ] User accounts
 * [ ] Cloud-based progress synchronization
 * [ ] More practice questions
-* [ ] Randomized question banks
+* [x] Randomized question banks
 * [ ] Difficulty levels
-* [ ] Detailed performance analytics
+* [x] Detailed performance analytics (domain breakdown + missed-question review on Practice Exam and Exam Simulator)
 * [ ] Mobile optimization
 * [ ] Dark/light theme selection
 * [ ] Sound effects and additional game animations
