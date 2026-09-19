@@ -604,11 +604,11 @@ const FIRST_PREP = [
 {q:"Jon wants to use certificates for a Java application he is developing, but wants to ensure they are not human readable. Which of the following certificate types should he choose?",o:["PEM","CRL","DER","P7B"],a:2,dm:"Cryptography",e:"DER is a binary certificate encoding, unlike PEM which is Base64-encoded ASCII text and is human-readable when opened."},
 {q:"A security analyst has been tasked with ensuring all programs deployed into the enterprise have been assessed in a runtime environment. Any critical issues found in the program must be sent back to the developer for verification and remediation. Which of the following BEST describes the type of assessment taking place?",o:["Input validation","Fuzzing","Manual code review","Dynamic code analysis"],a:3,dm:"Application Security",e:"Assessing a program while it executes — in a runtime environment — is the defining characteristic of dynamic code analysis, as opposed to static/manual review of source code."},
 {q:"Which of the following is a policy that provides greater depth and breadth of knowledge across an organization?",o:["Asset management policy","Acceptable use policy","Separation of duties policy","Job rotation policy"],a:3,dm:"Governance & Risk",e:"A job rotation policy moves employees through different roles over time, broadening institutional knowledge across the organization while also helping surface fraud that a single long-term role holder might conceal."},
-{q:"A systems engineer wants to leverage a cloud-based architecture with low latency between network-connected devices that also reduces the bandwidth required by performing analytics directly on the endpoints. Which of the following would BEST meet the requirements? (Choose two.)",o:["IaaS","Hybrid cloud","Private cloud","SaaS"],a:1,dm:"Cloud Security",e:"Fog computing performs analytics near the edge devices themselves to cut latency and bandwidth, and this is typically implemented as part of a hybrid cloud model that blends local edge processing with centralized cloud resources. (Note: this question originally allowed two correct selections — Fog computing and Hybrid cloud — condensed here to a single-answer format.)"},
+{q:"A systems engineer wants to leverage a cloud-based architecture with low latency between network-connected devices that also reduces the bandwidth required by performing analytics directly on the endpoints. Which of the following would BEST meet the requirements? (Choose two.)",o:["Fog computing","Hybrid cloud","Private cloud","SaaS","IaaS"],type:"multi",answers:[0,1],dm:"Cloud Security",e:"Fog computing performs analytics near the edge devices themselves, cutting latency and bandwidth — and this is typically implemented as part of a hybrid cloud model that blends local edge processing with centralized cloud resources. Private cloud, SaaS, and IaaS describe deployment/service models but don't by themselves push analytics out to the edge."},
 {q:"A user's account is constantly being locked out. Upon review, a security analyst found four login attempts one second apart, using passwords aBG23TMV, aBG33TMV, aBG43TMV, and aBG53TMV. Which of the following describes what is occurring?",o:["An attacker is utilizing a rainbow table attack against the account.","An attacker is utilizing a password-spraying attack against the account.","An attacker is utilizing a dictionary attack against the account.","An attacker is utilizing a brute-force attack against the account."],a:3,dm:"Threats & Malware",e:"Rapidly cycling through systematic variations of the same password against a single account — not spreading one password across many accounts — is a brute-force attack."},
 {q:"Which of the following processes will eliminate data using a method that will allow the storage device to be reused after the process is complete?",o:["Degaussing","Shredding","Pulverizing","Overwriting"],a:3,dm:"Security Operations",e:"Overwriting the data leaves the physical media intact and reusable, unlike degaussing, shredding, or pulverizing, which all destroy the media itself."},
 {q:"Yul, a cybersecurity analyst, has discovered a security breach at his company. It appears malicious actors gained access six months ago and have been able to continuously pivot to other systems to gain additional access. Which of the following BEST describes the type of intrusion he has discovered?",o:["Script Kiddie","Insider threat","APT","Hacktivist"],a:2,dm:"Threat Actors",e:"Months of sustained, stealthy access with ongoing lateral movement is the hallmark of an Advanced Persistent Threat — a well-resourced actor focused on long-term presence rather than a quick smash-and-grab."},
-{q:"A CISO has defined resiliency requirements for a new data center architecture: critical fileshares must remain accessible during and after a natural disaster; five percent of hard disks can fail at any time without impacting data; and systems must shut down gracefully when battery levels are below 20%. Which of the following are required to BEST meet these objectives? (Choose three.)",o:["Load balancing","Geographic dispersal","Redundant power supplies","UPS"],a:1,dm:"Resilience & Recovery",e:"Surviving a natural disaster at one site requires geographic dispersal; tolerating disk failures without data loss requires RAID; and a graceful shutdown triggered by battery level requires a UPS with monitoring. (Note: this question originally allowed three correct selections — Geographic dispersal, RAID, and UPS — condensed here to a single-answer format.)"},
+{q:"A CISO has defined resiliency requirements for a new data center architecture: critical fileshares must remain accessible during and after a natural disaster; five percent of hard disks can fail at any time without impacting data; and systems must shut down gracefully when battery levels are below 20%. Which of the following are required to BEST meet these objectives? (Choose three.)",o:["Load balancing","Geographic dispersal","RAID","Redundant power supplies","UPS","Hot site"],type:"multi",answers:[1,2,4],dm:"Resilience & Recovery",e:"Surviving a natural disaster at one site requires geographic dispersal; tolerating a percentage of drive failures without data loss requires RAID; and a graceful shutdown triggered by a battery-level threshold requires a monitored UPS. Redundant power supplies protect against a single power feed failing but don't provide that battery-level monitoring, and load balancing/hot site address different objectives (traffic distribution and full site failover) than what's described here."},
 ];
 
 // Maps the sub-topic label ('dm') used by FIRST_PREP / PBQ questions onto the 5 official
@@ -725,6 +725,7 @@ let svLives = 3, svC = 0, svI = 0, svHist = [], svAns = [], svDrawPool = [], svD
 let ptPool = [], ptI = 0, ptC = 0, ptAns = [];
 let notesI = 0;
 let fpPool = [], fpI = 0, fpC = 0, fpAns = [];
+let fpMultiWorking = [], fpMultiWorkingIdx = -1; // scratch selection for the current in-progress multi-select question
 let drillPool = [], drillI = 0, drillC = 0, drillAns = [], drillOpts = [], drillMod = 0;
 const FIRST_PREP_EXAM_LENGTH = 90;
 // Exam Simulator — strict, timed, no-feedback-until-submit mock exam.
@@ -919,6 +920,47 @@ function optBtnHtml(i, text, correctIdx, chosenIdx, btnClass) {
     else if (i === chosenIdx) cls += ' wrong';
   }
   return '<button class="' + cls + '" data-i="' + i + '"' + (chosenIdx !== null && chosenIdx !== undefined ? ' disabled' : '') + '>' + text + '</button>';
+}
+// ── Multi-select ("Choose two/three") question support ──
+// A multi-select question has type:'multi' and answers:[i,j,...] instead of a single a:idx.
+// These helpers let every mode that draws from FIRST_PREP (Practice Exam, Exam Simulator, and
+// "Redo Missed" runs of either) treat single- and multi-answer questions uniformly.
+function isMultiQ(q) { return q && q.type === 'multi'; }
+function isQCorrect(q, ch) {
+  if (isMultiQ(q)) {
+    if (!Array.isArray(ch) || ch.length !== q.answers.length) return false;
+    const want = q.answers.slice().sort((a, b) => a - b).join(',');
+    const got = ch.slice().sort((a, b) => a - b).join(',');
+    return want === got;
+  }
+  return ch === q.a;
+}
+function qAnswerText(q, ch) {
+  if (isMultiQ(q)) {
+    if (!Array.isArray(ch) || !ch.length) return '(no answer selected)';
+    return ch.slice().sort((a, b) => a - b).map(i => q.o[i]).join(', ');
+  }
+  return (ch !== null && ch !== undefined) ? q.o[ch] : '(no answer selected)';
+}
+function qCorrectText(q) {
+  return isMultiQ(q) ? q.answers.map(i => q.o[i]).join(', ') : q.o[q.a];
+}
+// Renders one option button for a multi-select question. `selected` is the array of indices the
+// user currently has toggled on. When `revealed` is true (question graded/locked), each option is
+// colored: correct+picked = green, correct+missed = amber, incorrect+picked = red.
+function multiOptBtnHtml(i, text, selected, revealed, correctArr) {
+  const isSel = selected.includes(i);
+  let cls = 'opt-btn multi';
+  if (revealed) {
+    const isCorrectOpt = correctArr.includes(i);
+    if (isCorrectOpt && isSel) cls += ' correct';
+    else if (isCorrectOpt && !isSel) cls += ' missed';
+    else if (isSel) cls += ' wrong';
+  } else if (isSel) {
+    cls += ' selected';
+  }
+  return '<button class="' + cls + '" data-i="' + i + '"' + (revealed ? ' disabled' : '') + '>' +
+    '<span class="multi-check">' + (isSel ? '☑' : '☐') + '</span>' + text + '</button>';
 }
 // Small caption connecting an exam domain to the course modules whose content maps into it.
 function moduleBridgeHtml(domainIdx) {
@@ -1168,6 +1210,24 @@ function examResultSubtext(pct, passed) {
 }
 // Per-domain accuracy for one completed exam run, using each question's dm sub-topic mapped
 // through DM_TO_DOMAIN onto the 5 official SY0-701 domains. ansArr entries need a .ch field.
+// Unified correctness/display for anything that can appear in an exam pool: a single-answer
+// MCQ (q.a / ans.ch is a number), a multi-select MCQ (q.answers / ans.ch is an array), or a PBQ
+// (q.slots / ans.selections is a {slotId: chosenIdx} map).
+function isEntryCorrect(q, a) {
+  if (q.slots) return !!(a && a.selections && q.slots.every(slot => a.selections[slot.id] === slot.correct));
+  return a ? isQCorrect(q, a.ch) : false;
+}
+function entryAnswerText(q, a) {
+  if (q.slots) {
+    if (!a || !a.selections) return '(no answer selected)';
+    return q.slots.map(slot => slot.label + ': ' + (a.selections[slot.id] !== undefined ? slot.options[a.selections[slot.id]] : '—')).join('; ');
+  }
+  return qAnswerText(q, a ? a.ch : null);
+}
+function entryCorrectText(q) {
+  if (q.slots) return q.slots.map(slot => slot.label + ': ' + slot.options[slot.correct]).join('; ');
+  return qCorrectText(q);
+}
 function domainBreakdownHtml(pool, ansArr) {
   const acc = {};
   pool.forEach((q, i) => {
@@ -1175,8 +1235,7 @@ function domainBreakdownHtml(pool, ansArr) {
     if (dom === undefined) return;
     if (!acc[dom]) acc[dom] = { c: 0, t: 0 };
     acc[dom].t++;
-    const a = ansArr[i];
-    if (a && a.ch === q.a) acc[dom].c++;
+    if (isEntryCorrect(q, ansArr[i])) acc[dom].c++;
   });
   const barColor = (pct) => pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
   const rows = DN.map((name, i) => {
@@ -1200,8 +1259,8 @@ function domainBreakdownHtml(pool, ansArr) {
       : '<div style="margin-top:.7rem;font-size:12px;color:#22c55e">No domain fell below 70% on this run — solid, even coverage.</div>') +
     '</div>';
 }
-// List every missed question from a completed run with the user's answer, the correct answer,
-// and the explanation — a consolidated post-exam study list.
+// List every missed question/PBQ from a completed run with the user's answer, the correct
+// answer, and the explanation — a consolidated post-exam study list.
 function missedReviewHtml(missed, pool, ansArr) {
   if (!missed.length) {
     return '<div class="card" style="margin-top:.9rem;text-align:center;color:#22c55e;font-size:13px;font-weight:600">🎉 Perfect run — no incorrect answers to review!</div>';
@@ -1209,12 +1268,11 @@ function missedReviewHtml(missed, pool, ansArr) {
   const rows = missed.map(q => {
     const i = pool.indexOf(q);
     const a = ansArr[i];
-    const yourAns = (a && a.ch !== null && a.ch !== undefined) ? q.o[a.ch] : '(no answer selected)';
     return '<div class="review-item">' +
-      '<div class="review-q">Q' + (i + 1) + '. ' + q.q + '</div>' +
-      '<div class="review-row your">Your answer: ' + yourAns + '</div>' +
-      '<div class="review-row correct">Correct: ' + q.o[q.a] + '</div>' +
-      '<div class="review-why">' + (q.e || '') + '</div>' +
+      '<div class="review-q">Q' + (i + 1) + '. ' + (q.slots ? q.title : q.q) + '</div>' +
+      '<div class="review-row your">Your answer: ' + entryAnswerText(q, a) + '</div>' +
+      '<div class="review-row correct">Correct: ' + entryCorrectText(q) + '</div>' +
+      '<div class="review-why">' + (q.e || q.explanation || '') + '</div>' +
       (q.dm ? '<div class="review-topic">' + q.dm + '</div>' : '') +
       '</div>';
   }).join('');
@@ -1755,10 +1813,55 @@ function endDex() {
   if (missed.length > 0) document.getElementById('btn-miss').addEventListener('click', () => startDex(dDom, missed));
 }
 
+// Official SY0-701 domain weighting (General 12%, Threats 22%, Architecture 18%,
+// Operations 28%, Governance 20%), indices matching DN/DM_TO_DOMAIN.
+const EXAM_BLUEPRINT = [12, 22, 18, 28, 20];
+// Builds a `size`-question pool from FIRST_PREP that follows that weighting as closely as the
+// bank allows, rather than pure random sampling (which can, by chance, under- or over-represent
+// a domain — e.g. pull far too few Governance questions on a given run). If a domain's target
+// can't be met from the bank, the shortfall is filled from whichever domain currently has the
+// most spare questions, one at a time, so the final pool always has exactly `size` questions.
+function buildBlueprintPool(size) {
+  const byDomain = [[], [], [], [], []];
+  FIRST_PREP.forEach(q => {
+    const d = DM_TO_DOMAIN[q.dm];
+    if (d !== undefined) byDomain[d].push(q);
+  });
+  const target = EXAM_BLUEPRINT.map(pct => Math.round(pct / 100 * size));
+  const drift = size - target.reduce((a, b) => a + b, 0);
+  if (drift !== 0) {
+    let maxIdx = 0;
+    for (let i = 1; i < target.length; i++) if (target[i] > target[maxIdx]) maxIdx = i;
+    target[maxIdx] += drift;
+  }
+  const available = byDomain.map(arr => arr.length);
+  const take = target.map((t, i) => Math.min(t, available[i]));
+  let shortfall = target.reduce((sum, t, i) => sum + Math.max(0, t - available[i]), 0);
+  while (shortfall > 0) {
+    let bestIdx = -1, bestSpare = 0;
+    for (let i = 0; i < take.length; i++) {
+      const spare = available[i] - take[i];
+      if (spare > bestSpare) { bestSpare = spare; bestIdx = i; }
+    }
+    if (bestIdx === -1) break; // no spare capacity left anywhere in the bank
+    take[bestIdx]++;
+    shortfall--;
+  }
+  let pool = [];
+  byDomain.forEach((arr, i) => { pool = pool.concat(shuf([...arr]).slice(0, take[i])); });
+  if (pool.length < size) { // top up from anything unmapped, just in case
+    const used = new Set(pool);
+    const rest = FIRST_PREP.filter(q => !used.has(q));
+    pool = pool.concat(shuf([...rest]).slice(0, size - pool.length));
+  }
+  return shuf(pool);
+}
+
 // ─── PRACTICE EXAM (90-question mock exam, feedback after every question) ───
 function startFirstPrep(customPool) {
-  fpPool = customPool || shuf([...FIRST_PREP]).slice(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
+  fpPool = customPool || buildBlueprintPool(Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
   fpI = 0; fpC = 0; fpAns = [];
+  fpMultiWorking = []; fpMultiWorkingIdx = -1;
   showGame('📝 Practice Exam');
   setProg(0, fpPool.length);
   renderFirstPrep();
@@ -1768,26 +1871,48 @@ function renderFirstPrep() {
   setProg(fpI, fpPool.length);
   const q = fpPool[fpI];
   const ans = fpAns[fpI];
+  const multi = isMultiQ(q);
+  if (multi && !ans && fpMultiWorkingIdx !== fpI) { fpMultiWorking = []; fpMultiWorkingIdx = fpI; }
+
+  const optsHtml = multi
+    ? q.o.map((o, i) => multiOptBtnHtml(i, o, ans ? ans.ch : fpMultiWorking, !!ans, q.answers)).join('')
+    : q.o.map((o, i) => optBtnHtml(i, o, q.a, ans ? ans.ch : null, 'opt-btn')).join('');
+
   setBody(
     '<div style="font-size:10px;color:#6b7299;margin-bottom:.45rem">Question ' + (fpI+1) + ' of ' + fpPool.length + (q.dm ? ' · ' + q.dm : '') + '</div>' +
     '<div class="card">' +
       '<div class="q-text">' + q.q + '</div>' +
-      '<div class="opts-grid" id="fp-opts">' +
-        q.o.map((o, i) => optBtnHtml(i, o, q.a, ans ? ans.ch : null, 'opt-btn')).join('') +
+      (multi && !ans ? '<div class="multi-hint">Select exactly ' + q.answers.length + ' answers.</div>' : '') +
+      '<div class="opts-grid" id="fp-opts">' + optsHtml + '</div>' +
+      (multi && !ans ? '<div style="text-align:center;margin-top:.9rem"><button class="btn-res primary" id="fp-submit-multi"' + (fpMultiWorking.length === q.answers.length ? '' : ' disabled') + '>Submit Answer</button></div>' : '') +
+      '<div class="exp-box' + (ans ? ' show' + (ans.ok ? '' : ' wrong') : '') + '" id="fp-exp">' +
+        (ans ? (ans.ok ? '✓ Correct. ' : '✗ Incorrect. ') + (q.e || '') + (multi && !ans.ok ? '<br><span style="opacity:.85">Correct answer: ' + qCorrectText(q) + '</span>' : '') : '') +
       '</div>' +
-      '<div class="exp-box' + (ans ? ' show' + (ans.ok ? '' : ' wrong') : '') + '" id="fp-exp">' + (ans ? (ans.ok ? '✓ Correct. ' : '✗ Incorrect. ') + (q.e || '') : '') + '</div>' +
     '</div>' +
     navRowHtml(fpI > 0, !!ans, fpI === fpPool.length - 1)
   );
   if (!ans) {
     document.getElementById('fp-opts').querySelectorAll('.opt-btn').forEach(btn => {
-      btn.addEventListener('click', () => pickFirstPrep(parseInt(btn.getAttribute('data-i'))));
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.getAttribute('data-i'));
+        if (multi) {
+          const pos = fpMultiWorking.indexOf(i);
+          if (pos === -1) fpMultiWorking.push(i); else fpMultiWorking.splice(pos, 1);
+          renderFirstPrep();
+        } else {
+          pickFirstPrep(i);
+        }
+      });
+    });
+    const submitBtn = document.getElementById('fp-submit-multi');
+    if (submitBtn) submitBtn.addEventListener('click', () => {
+      if (fpMultiWorking.length === q.answers.length) pickFirstPrep(fpMultiWorking.slice());
     });
   }
   wireNav(() => { fpI--; renderFirstPrep(); }, () => { fpI++; renderFirstPrep(); });
 }
 function pickFirstPrep(ch) {
-  const q = fpPool[fpI]; const ok = ch === q.a;
+  const q = fpPool[fpI]; const ok = isQCorrect(q, ch);
   if (ok) { fpC++; addXP(15); }
   bumpStreak(ok);
   const dom = DM_TO_DOMAIN[q.dm];
@@ -1829,11 +1954,22 @@ function updateExamTimerDisplay() {
 function examOptBtnHtml(i, text, chosenIdx) {
   return '<button class="opt-btn' + (chosenIdx === i ? ' selected' : '') + '" data-i="' + i + '">' + text + '</button>';
 }
+// True once the user has made *some* selection on this item — used for the unanswered counter
+// and the navigator, independent of whether that selection is actually correct.
+function esIsAnswered(q, a) {
+  if (q.slots) return !!(a.selections && Object.keys(a.selections).length > 0);
+  if (isMultiQ(q)) return Array.isArray(a.ch) && a.ch.length > 0;
+  return a.ch !== null;
+}
 function startExamSim() {
   clearExamTimer();
-  esPool = shuf([...FIRST_PREP]).slice(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length));
+  // Mirrors the real exam's structure: a handful of performance-based items up front, blended
+  // with multiple-choice questions drawn to the official SY0-701 domain weighting.
+  const pbqPart = shuf([...PBQS]);
+  const mcqPart = buildBlueprintPool(Math.max(0, Math.min(FIRST_PREP_EXAM_LENGTH, FIRST_PREP.length) - pbqPart.length));
+  esPool = pbqPart.concat(mcqPart);
   esI = 0; esReviewing = false;
-  esAns = esPool.map(() => ({ ch: null, marked: false }));
+  esAns = esPool.map(q => q.slots ? { selections: {}, marked: false } : { ch: isMultiQ(q) ? [] : null, marked: false });
   esTimeLeft = EXAM_SIM_DURATION_SEC;
   showGame('🎓 Exam Simulator');
   const sp = document.getElementById('streak-pill');
@@ -1856,19 +1992,34 @@ function renderExamSim() {
   setProg(esI, esPool.length);
   const q = esPool[esI];
   const st = esAns[esI];
-  const unanswered = esAns.filter(a => a.ch === null).length;
+  const unanswered = esAns.filter((a, i) => !esIsAnswered(esPool[i], a)).length;
+
+  let bodyHtml;
+  if (q.slots) {
+    // PBQ item — same slot-select engine as PBQ Practice, but never revealed until grading.
+    bodyHtml =
+      '<div class="q-text">' + q.title + '</div>' +
+      '<div style="font-size:12.5px;color:#6b7299;line-height:1.55;margin-bottom:.3rem">' + q.scenario + '</div>' +
+      (q.context ? '<div class="pbq-context">' + q.context + '</div>' : '') +
+      pbqInteractiveHtml(q, { selections: st.selections, checked: false });
+  } else if (isMultiQ(q)) {
+    bodyHtml =
+      '<div class="q-text">' + q.q + '</div>' +
+      '<div class="multi-hint">Select exactly ' + q.answers.length + ' answers.</div>' +
+      '<div class="opts-grid" id="es-opts">' + q.o.map((o, i) => multiOptBtnHtml(i, o, st.ch, false, q.answers)).join('') + '</div>';
+  } else {
+    bodyHtml =
+      '<div class="q-text">' + q.q + '</div>' +
+      '<div class="opts-grid" id="es-opts">' + q.o.map((o, i) => examOptBtnHtml(i, o, st.ch)).join('') + '</div>';
+  }
+
   setBody(
     examTimerBarHtml() +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:6px">' +
-      '<div style="font-size:10px;color:#6b7299">Question ' + (esI+1) + ' of ' + esPool.length + (q.dm ? ' · ' + q.dm : '') + '</div>' +
+      '<div style="font-size:10px;color:#6b7299">Question ' + (esI+1) + ' of ' + esPool.length + (q.dm ? ' · ' + q.dm : '') + (q.slots ? ' · PBQ' : '') + '</div>' +
       '<div style="font-size:10px;color:#6b7299">' + unanswered + ' unanswered</div>' +
     '</div>' +
-    '<div class="card">' +
-      '<div class="q-text">' + q.q + '</div>' +
-      '<div class="opts-grid" id="es-opts">' +
-        q.o.map((o, i) => examOptBtnHtml(i, o, st.ch)).join('') +
-      '</div>' +
-    '</div>' +
+    '<div class="card">' + bodyHtml + '</div>' +
     '<div style="display:flex;gap:.5rem;justify-content:center;margin:.7rem 0">' +
       '<button class="mark-btn' + (st.marked ? ' active' : '') + '" id="es-mark">' + (st.marked ? '🚩 Marked for Review' : '🏳️ Mark for Review') + '</button>' +
     '</div>' +
@@ -1878,9 +2029,27 @@ function renderExamSim() {
       '<button class="btn-res primary" id="es-next">' + (esI === esPool.length - 1 ? 'Review & Submit' : 'Next →') + '</button>' +
     '</div>'
   );
-  document.getElementById('es-opts').querySelectorAll('.opt-btn').forEach(btn => {
-    btn.addEventListener('click', () => { st.ch = parseInt(btn.getAttribute('data-i')); renderExamSim(); });
-  });
+  if (q.slots) {
+    document.querySelectorAll('.pbq-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        st.selections[sel.getAttribute('data-slot')] = parseInt(sel.value, 10);
+        renderExamSim();
+      });
+    });
+  } else if (isMultiQ(q)) {
+    document.getElementById('es-opts').querySelectorAll('.opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.getAttribute('data-i'));
+        const pos = st.ch.indexOf(i);
+        if (pos === -1) st.ch.push(i); else st.ch.splice(pos, 1);
+        renderExamSim();
+      });
+    });
+  } else {
+    document.getElementById('es-opts').querySelectorAll('.opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => { st.ch = parseInt(btn.getAttribute('data-i')); renderExamSim(); });
+    });
+  }
   document.getElementById('es-mark').addEventListener('click', () => { st.marked = !st.marked; renderExamSim(); });
   const back = document.getElementById('es-back');
   if (back) back.addEventListener('click', () => { esI--; renderExamSim(); });
@@ -1891,7 +2060,7 @@ function renderExamSim() {
   });
 }
 function showExamReview() {
-  const answered = esAns.filter(a => a.ch !== null).length;
+  const answered = esAns.filter((a, i) => esIsAnswered(esPool[i], a)).length;
   const unanswered = esPool.length - answered;
   const marked = esAns.filter(a => a.marked).length;
   setBody(
@@ -1902,12 +2071,12 @@ function showExamReview() {
       '<div class="qnav-grid" id="qnav-grid">' +
         esPool.map((q, i) => {
           const a = esAns[i];
-          const cls = a.marked ? 'marked' : (a.ch !== null ? 'answered' : 'unanswered');
-          return '<button class="qnav-btn ' + cls + '" data-i="' + i + '">' + (i+1) + '</button>';
+          const cls = a.marked ? 'marked' : (esIsAnswered(q, a) ? 'answered' : 'unanswered');
+          return '<button class="qnav-btn ' + cls + '" data-i="' + i + '">' + (q.slots ? 'P' + (i + 1) : (i + 1)) + '</button>';
         }).join('') +
       '</div>' +
       '<div style="margin-top:.85rem;font-size:10px;color:#6b7299">' +
-        '<span class="qnav-dot answered"></span>Answered &nbsp; <span class="qnav-dot unanswered"></span>Unanswered &nbsp; <span class="qnav-dot marked"></span>Marked' +
+        '<span class="qnav-dot answered"></span>Answered &nbsp; <span class="qnav-dot unanswered"></span>Unanswered &nbsp; <span class="qnav-dot marked"></span>Marked &nbsp; <span style="opacity:.7">("P" = performance-based)</span>' +
       '</div>' +
     '</div>' +
     '<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.8rem">' +
@@ -1933,16 +2102,18 @@ function endExamSim() {
   const timeUsedSec = EXAM_SIM_DURATION_SEC - Math.max(0, esTimeLeft);
   let correctCount = 0;
   esPool.forEach((q, i) => {
-    const ok = esAns[i].ch === q.a;
+    const ok = isEntryCorrect(q, esAns[i]);
     if (ok) correctCount++;
     const dom = DM_TO_DOMAIN[q.dm];
     if (dom !== undefined) bumpDomAcc(dom, ok);
   });
   const pct = Math.round((correctCount / esPool.length) * 100);
   const passed = pct >= PASS_BENCHMARK;
-  const missed = esPool.filter((q, i) => esAns[i].ch !== q.a);
+  const missed = esPool.filter((q, i) => !isEntryCorrect(q, esAns[i]));
+  const missedMCQ = missed.filter(q => !q.slots);
+  const missedPBQ = missed.filter(q => q.slots);
   const markedCount = esAns.filter(a => a.marked).length;
-  const answeredCount = esAns.filter(a => a.ch !== null).length;
+  const answeredCount = esAns.filter((a, i) => esIsAnswered(esPool[i], a)).length;
   const xpEarned = correctCount * 15;
 
   if (passed && !ST.ach.includes('afprep')) { ST.ach.push('afprep'); showToast('🏆 Mock Exam Passed!', 'blue'); }
@@ -1956,7 +2127,8 @@ function endExamSim() {
   setBody(
     makeResPanel(xpEarned, pct, correctCount + ' / ' + esPool.length + ' correct', examResultSubtext(pct, passed),
       '<button class="btn-res primary" id="btn-newsim">New 90-Min Simulation</button>' +
-      (missed.length > 0 ? '<button class="btn-res secondary" id="btn-redo">Practice Missed (' + missed.length + ')</button>' : '') +
+      (missedMCQ.length > 0 ? '<button class="btn-res secondary" id="btn-redo-mcq">Practice Missed MCQs (' + missedMCQ.length + ')</button>' : '') +
+      (missedPBQ.length > 0 ? '<button class="btn-res secondary" id="btn-redo-pbq">Redo Missed PBQs (' + missedPBQ.length + ')</button>' : '') +
       '<button class="btn-res secondary" id="btn-hm">Home</button>'
     ) +
     '<div class="card" style="margin-top:.9rem;text-align:center;font-size:12px;color:#6b7299">' +
@@ -1967,7 +2139,8 @@ function endExamSim() {
   );
   document.getElementById('btn-newsim').addEventListener('click', () => startExamSim());
   document.getElementById('btn-hm').addEventListener('click', showHome);
-  if (missed.length > 0) document.getElementById('btn-redo').addEventListener('click', () => startFirstPrep(missed));
+  if (missedMCQ.length > 0) document.getElementById('btn-redo-mcq').addEventListener('click', () => startFirstPrep(missedMCQ));
+  if (missedPBQ.length > 0) document.getElementById('btn-redo-pbq').addEventListener('click', () => startPBQ(missedPBQ));
 }
 
 // ─── PBQ PRACTICE (performance-based, scenario-application questions) ───
@@ -1979,6 +2152,19 @@ function pbqSlotSelectHtml(slot, state) {
     '<option value=""' + (chosen === undefined ? ' selected' : '') + ' disabled>Select…</option>' +
     slot.options.map((o, i) => '<option value="' + i + '"' + (chosen === i ? ' selected' : '') + '>' + o + '</option>').join('') +
     '</select>';
+}
+// Fills a PBQ's diagram/slot template with live <select> controls. Shared by standalone PBQ
+// Practice and by PBQ items mixed into the Exam Simulator — pass state.checked:false to keep the
+// controls unrevealed (as the strict simulator requires) or state.checked:true to reveal grading.
+function pbqInteractiveHtml(q, state) {
+  if (q.diagram) {
+    let filled = q.diagram;
+    q.slots.forEach(slot => { filled = filled.split('{{' + slot.id + '}}').join(pbqSlotSelectHtml(slot, state)); });
+    return filled;
+  }
+  return '<div class="pbq-slots">' + q.slots.map(slot =>
+    '<div class="pbq-slot-row"><div class="pbq-slot-label">' + slot.label + '</div>' + pbqSlotSelectHtml(slot, state) + '</div>'
+  ).join('') + '</div>';
 }
 function startPBQ(customPool) {
   pbqPool = customPool || shuf([...PBQS]);
@@ -1993,17 +2179,6 @@ function renderPBQ() {
   const q = pbqPool[pbqI];
   if (!pbqAns[pbqI]) pbqAns[pbqI] = { selections: {}, checked: false, allCorrect: false };
   const state = pbqAns[pbqI];
-
-  let interactiveHtml;
-  if (q.diagram) {
-    let filled = q.diagram;
-    q.slots.forEach(slot => { filled = filled.split('{{' + slot.id + '}}').join(pbqSlotSelectHtml(slot, state)); });
-    interactiveHtml = filled;
-  } else {
-    interactiveHtml = '<div class="pbq-slots">' + q.slots.map(slot =>
-      '<div class="pbq-slot-row"><div class="pbq-slot-label">' + slot.label + '</div>' + pbqSlotSelectHtml(slot, state) + '</div>'
-    ).join('') + '</div>';
-  }
   const allFilled = q.slots.every(slot => state.selections[slot.id] !== undefined);
 
   setBody(
@@ -2012,7 +2187,7 @@ function renderPBQ() {
       '<div class="q-text">' + q.title + '</div>' +
       '<div style="font-size:12.5px;color:#6b7299;line-height:1.55;margin-bottom:.3rem">' + q.scenario + '</div>' +
       (q.context ? '<div class="pbq-context">' + q.context + '</div>' : '') +
-      interactiveHtml +
+      pbqInteractiveHtml(q, state) +
       (state.checked
         ? '<div class="exp-box show' + (state.allCorrect ? '' : ' wrong') + '">' + (state.allCorrect ? '✓ All correct. ' : '✗ One or more selections were incorrect (see highlighted fields). ') + q.explanation + '</div>'
         : '<div style="text-align:center;margin-top:1rem"><button class="btn-res primary" id="pbq-check"' + (allFilled ? '' : ' disabled') + '>Check Answer</button></div>'
