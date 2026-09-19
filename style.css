@@ -259,6 +259,7 @@ body {
 .btn-res.primary { background: linear-gradient(135deg,#5b7fff,#9d7ff5); color: #fff; border: none; }
 .btn-res.secondary { background: transparent; border: 1px solid #1e2240; color: #e2e4f0; }
 .btn-res.secondary:hover { border-color: #5b7fff; color: #5b7fff; }
+.btn-res:disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.3); }
 .xp-earned { display: inline-block; background: rgba(91,127,255,.11); border: 1px solid rgba(91,127,255,.22); color: #5b7fff; font-size: 11px; font-weight: 700; padding: 3px 11px; border-radius: 99px; margin-bottom: 0.75rem; }
 /* ── SURVIVAL ── */
 .surv-stats { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
@@ -300,9 +301,14 @@ body {
   .domain-grid { grid-template-columns: repeat(2,1fr); }
 }
 .azopts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
+.disclaimer { text-align: center; font-size: 10.5px; color: #4d5273; margin: 2rem 0 1rem; line-height: 1.6; }
 
 /* ── EXAM SIMULATOR ── */
 .opt-btn.selected { border-color: #5b7fff !important; background: rgba(91,127,255,.1) !important; }
+.opt-btn.missed { border-color: #f5a623 !important; background: rgba(245,166,35,.08) !important; color: #f5a623 !important; }
+.opt-btn.multi { display: flex; align-items: center; gap: 10px; text-align: left; }
+.multi-check { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.multi-hint { font-size: 11px; color: #6b7299; margin: -0.2rem 0 0.7rem; }
 .exam-timer { display: inline-block; background: rgba(63,217,200,.1); border: 1px solid rgba(63,217,200,.3); color: #3fd9c8; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; margin-bottom: 0.75rem; }
 .exam-timer.warn { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color: #ef4444; animation: examPulse 1s infinite; }
 @keyframes examPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
